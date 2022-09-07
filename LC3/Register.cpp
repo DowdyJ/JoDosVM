@@ -109,6 +109,40 @@ void Register::Not(const uint16_t& instruction)
     Register::UpdateFlags(static_cast<REGISTER>(destinationRegister));
 }
 
+void Register::Jmp(const uint16_t& instruction) 
+{
+    // xxxx xxx xxx xxxxxx
+    // inst xxx reg xxxxxx
+
+    uint16_t regIndex = (instruction >> 6) & 0x7;
+    reg[R_PC] = reg[regIndex];
+
+    return;
+}
+
+void Register::Jsr(const uint16_t& instruction) 
+{
+    // xxxx x xxxxxxxxxxx JSR
+    // inst m1PCOffset11
+    // xxxx x xx xxx xxxxxx
+    // inst m0xx reg xxxxxx
+
+    bool flagSet = (instruction >> 11) & 1;
+
+    if (flagSet) 
+    {
+        reg[R_PC] = reg[R_PC] + ExtendSign(instruction & 0b0000011111111111, 11);
+    }
+    else 
+    {
+        uint16_t registerIndex = (instruction >> 6) & 0x7;
+
+        reg[R_PC] = reg[registerIndex];
+    }
+
+    return;
+}
+
 void Register::Br(const uint16_t& instruction)
 {
     // xxxx x x x xxxxxxxxx
@@ -158,8 +192,10 @@ void Register::ProcessWord()
         Register::Br(instr);
         break;
     case OP_JMP:
+        Register::Jmp(instr);
         break;
     case OP_JSR:
+        Register::Jsr(instr);
         break;
     case OP_LD:
         break;

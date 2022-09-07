@@ -65,6 +65,10 @@ public:
 
     static void Not(const uint16_t& instruction);
 
+    static void Jmp(const uint16_t& instruction);
+
+    static void Jsr(const uint16_t& instruction);
+
     static void Br(const uint16_t& instruction);
 
 
