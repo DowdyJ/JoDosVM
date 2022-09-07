@@ -143,6 +143,32 @@ void Register::Jsr(const uint16_t& instruction)
     return;
 }
 
+void Register::Ld(const uint16_t & instruction)
+{
+    // xxxx xxx xxxxxxxxx
+    // inst DR  PCOffset9
+    uint16_t destinationRegister = (instruction >> 9) & 0x7;
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
+    
+    reg[destinationRegister] = memory[reg[R_PC] + signExtendedOffset];
+
+    UpdateFlags(static_cast<REGISTER>(destinationRegister));
+}
+
+void Register::Ldi(const uint16_t& instruction)
+{
+    // xxxx xxx xxxxxxxxx
+    // inst DR  PCOffset9
+
+    uint16_t destinationRegister = (instruction >> 9) & 0x7;
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
+
+    reg[destinationRegister] = memory[memory[reg[R_PC] + signExtendedOffset]];
+
+    UpdateFlags(static_cast<REGISTER>(destinationRegister));
+}
+
+
 void Register::Br(const uint16_t& instruction)
 {
     // xxxx x x x xxxxxxxxx
@@ -198,6 +224,7 @@ void Register::ProcessWord()
         Register::Jsr(instr);
         break;
     case OP_LD:
+        Register::Ld(instr);
         break;
     case OP_LDI:
         break;

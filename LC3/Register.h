@@ -71,7 +71,9 @@ public:
 
     static void Br(const uint16_t& instruction);
 
+    static void Ld(const uint16_t& instruction);
 
+    static void Ldi(const uint16_t& instruction);
     #pragma endregion
 
     static void HandleBadOpCode(const uint16_t& instruction);
