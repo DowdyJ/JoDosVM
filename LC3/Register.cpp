@@ -168,6 +168,22 @@ void Register::Ldi(const uint16_t& instruction)
     UpdateFlags(static_cast<REGISTER>(destinationRegister));
 }
 
+void Register::Ldr(const uint16_t& instruction)
+{
+    // xxxx xxx xxx xxxxxx
+    // inst DR  Reg  Off6
+
+    uint16_t destinationRegister = (instruction >> 9) & 0x7;
+    uint16_t baseRegister = (instruction >> 6) & 0x7;
+
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000000111111, 6);
+
+    reg[destinationRegister] = memory[reg[baseRegister] + signExtendedOffset];
+
+    UpdateFlags(static_cast<REGISTER>(destinationRegister));
+}
+
+
 
 void Register::Br(const uint16_t& instruction)
 {
@@ -227,8 +243,10 @@ void Register::ProcessWord()
         Register::Ld(instr);
         break;
     case OP_LDI:
+        Register::Ldi(instr);
         break;
     case OP_LDR:
+        Register::Ldr(instr);
         break;
     case OP_LEA:
         break;
