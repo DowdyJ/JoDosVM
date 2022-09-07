@@ -78,6 +78,12 @@ public:
     static void Ldr(const uint16_t& instruction);
 
     static void Lea(const uint16_t& instruction);
+    
+    static void St(const uint16_t& instruction);
+
+    static void Sti(const uint16_t& instruction);
+
+    static void Str(const uint16_t& instruction);
 
 #pragma endregion
 

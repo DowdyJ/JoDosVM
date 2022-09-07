@@ -196,6 +196,46 @@ void Register::Lea(const uint16_t& instruction)
     UpdateFlags(static_cast<REGISTER>(destinationRegister));
 }
 
+void Register::St(const uint16_t& instruction) 
+{
+    // xxxx xxx xxxxxxxxx
+    // inst SR  PCOffset9
+
+    uint16_t sourceRegister = (instruction >> 9) & 0x7;
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
+
+    memory[reg[R_PC] + signExtendedOffset] = reg[sourceRegister];
+
+    return;
+}
+
+void Register::Sti(const uint16_t& instruction)
+{
+    // xxxx xxx xxxxxxxxx
+    // inst SR  PCOffset9
+
+    uint16_t sourceRegister = (instruction >> 9) & 0x7;
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
+
+    memory[memory[reg[R_PC] + signExtendedOffset]] = reg[sourceRegister];
+
+    return;
+}
+
+void Register::Str(const uint16_t& instruction)
+{
+    // xxxx xxx xxx xxxxxx
+    // inst SR  BSR Off6
+
+    uint16_t sourceRegister = (instruction >> 9) & 0x7;
+    uint16_t baseRegister = (instruction >> 6) & 0x7;
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000000111111, 6);
+
+    memory[reg[baseRegister] + signExtendedOffset] = reg[sourceRegister];
+
+    return;
+}
+
 void Register::Br(const uint16_t& instruction)
 {
     // xxxx x x x xxxxxxxxx
@@ -263,10 +303,13 @@ void Register::ProcessWord()
         Register::Lea(instr);
         break;
     case OP_ST:
+        Register::St(instr);
         break;
     case OP_STI:
+        Register::Sti(instr);
         break;
     case OP_STR:
+        Register::Str(instr);
         break;
     case OP_TRAP:
         break;
