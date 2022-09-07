@@ -9,6 +9,7 @@ Register::~Register()
 }
 
 uint16_t Register::reg[R_COUNT];
+uint16_t Register::memory[MEM_MAX];
 
 
 void Register::UpdateFlags(REGISTER regIndex)
@@ -96,6 +97,18 @@ void Register::And(const uint16_t& instruction)
     
 }
 
+void Register::Not(const uint16_t& instruction) 
+{
+    // xxxx xxx xxx x xxxxx
+    // inst DR  SR  x xxxxx
+    uint16_t destinationRegister = (instruction >> 9) & 0x7;
+    uint16_t firstRegister = (instruction >> 6) & 0x7;
+
+    reg[destinationRegister] = ~reg[firstRegister];
+
+    Register::UpdateFlags(static_cast<REGISTER>(destinationRegister));
+}
+
 void Register::Br(const uint16_t& instruction)
 {
     // xxxx x x x xxxxxxxxx
@@ -120,6 +133,11 @@ void Register::SetValueInRegister(REGISTER regIndex, uint16_t value)
     Register::reg[regIndex] = value;
 }
 
+void Register::HandleBadOpCode(const uint16_t& instruction) 
+{
+    //Do something!
+}
+
 void Register::ProcessWord()
 {
     uint16_t instr = mem_read(reg[R_PC]++);
@@ -128,12 +146,16 @@ void Register::ProcessWord()
     switch (op)
     {
     case OP_ADD:
+        Register::Add(instr);
         break;
     case OP_AND:
+        Register::And(instr);
         break;
     case OP_NOT:
+        Register::Not(instr);
         break;
     case OP_BR:
+        Register::Br(instr);
         break;
     case OP_JMP:
         break;
@@ -156,9 +178,13 @@ void Register::ProcessWord()
     case OP_TRAP:
         break;
     case OP_RES:
+        Register::HandleBadOpCode(instr);
+        break;
     case OP_RTI:
+        Register::HandleBadOpCode(instr);
+        break;
     default:
-        // Bad opcode
+        Register::HandleBadOpCode(instr);
         break;
     }
 }

@@ -131,5 +131,28 @@ namespace UnitTests
 
 			Assert::AreEqual(static_cast<uint16_t>(5), Register::GetValueInReg(Register::R_R1));
 		}
+
+		TEST_METHOD(NotAppliedToSelf) 
+		{
+			uint16_t instruction = 0b1001001001111111;
+
+			Register::SetValueInRegister(Register::R_R1, 0b0000000011111111);
+
+			Register::Not(instruction);
+
+			Assert::AreEqual(static_cast<uint16_t>(0b1111111100000000), Register::GetValueInReg(Register::R_R1));
+		}
+
+		TEST_METHOD(NotAppliedToAnotherRegister)
+		{
+			uint16_t instruction = 0b1001010001111111;
+
+			Register::SetValueInRegister(Register::R_R1, 0b0000000011111111);
+			Register::SetValueInRegister(Register::R_R2, 0b0000000000000000);
+
+			Register::Not(instruction);
+
+			Assert::AreEqual(static_cast<uint16_t>(0b1111111100000000), Register::GetValueInReg(Register::R_R2));
+		}
 	};
 }

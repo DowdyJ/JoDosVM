@@ -57,12 +57,22 @@ public:
 
     static void ProcessProgram();
 
+    #pragma region OPCODE DEFINITIONS
 
     static void Add(const uint16_t& instruction);
 
     static void And(const uint16_t& instruction);
 
+    static void Not(const uint16_t& instruction);
+
     static void Br(const uint16_t& instruction);
+
+
+    #pragma endregion
+
+    static void HandleBadOpCode(const uint16_t& instruction);
+
+
 
     inline static uint16_t GetValueInReg(REGISTER regIndex) 
     {
