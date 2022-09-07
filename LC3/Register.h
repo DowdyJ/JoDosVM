@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-
-//#define private public
+#define MEM_MAX (1 << 15)
+#define private public
 
 class Register
 {
@@ -60,28 +60,36 @@ public:
 
     static void Add(const uint16_t& instruction);
 
+    static void And(const uint16_t& instruction);
+
+    static void Br(const uint16_t& instruction);
+
     inline static uint16_t GetValueInReg(REGISTER regIndex) 
     {
         return reg[regIndex];
     }
+
 private:
+    static void SetValueInRegister(REGISTER regIndex, uint16_t value);
+
 
     static inline uint16_t ExtendSign(const uint16_t& value, const int& bitCount)
     {
-        if ((value >> 4) & 1)
-        {
-            return value | (0xFFFF << bitCount);
+        uint16_t valueCopy = value;
+        if ((valueCopy >> (bitCount - 1)) & 1) {
+            valueCopy |= (0xFFFF << bitCount);
         }
-
-        return value;
+        return valueCopy;
     }
 
     static void ProcessWord();
 
     static uint16_t reg[R_COUNT];
 
+    static uint16_t memory[MEM_MAX];
+
 };
 
 
 
-//#undef private
+#undef private

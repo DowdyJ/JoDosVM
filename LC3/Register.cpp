@@ -51,29 +51,73 @@ void Register::Add(const uint16_t& instruction)
     // xxxx xxx xxx x xx xxx
     // inst  dr sr1 m xx sr2
     // inst  dr sr1 m imm5
-
+    uint16_t destinationRegister = (instruction >> 9) & 0x7;
+    uint16_t firstRegister = (instruction >> 6) & 0x7;
     if ((instruction >> 5) & 1) // alt-add mode
     {
-        uint16_t valueToAdd = (instruction) & 0x1f;
+        uint16_t valueToAdd = (instruction) & 0b00000000011111;
         valueToAdd = ExtendSign(valueToAdd, 5);
-
-        uint16_t firstRegister = (instruction >> 6) & 0x7;
-        uint16_t destinationRegister = (instruction >> 12) & 0x7;
-
+    
         reg[destinationRegister] = reg[firstRegister] + valueToAdd;
     }
     else // first add mode 
     {
-        uint16_t firstRegister = (instruction >> 6) & 0x7;
         uint16_t secondRegister = (instruction) & 0x7;
-        uint16_t destinationRegister = (instruction >> 12) & 0x7;
-
+      
         reg[destinationRegister] = reg[firstRegister] + reg[secondRegister];
+    }
+    UpdateFlags(static_cast<REGISTER>(destinationRegister));
+    return;
+}
 
-        UpdateFlags(static_cast<REGISTER>(destinationRegister));
+void Register::And(const uint16_t& instruction)
+{
+    // xxxx xxx xxx x xx xxx
+    // inst  dr sr1 m xx sr2
+    // inst  dr sr1 m imm5
+    uint16_t firstRegister = (instruction >> 6) & 0x7;
+    uint16_t destinationRegister = (instruction >> 9) & 0x7;
+
+    if ((instruction >> 5) & 1) // alt-and mode
+    {
+        uint16_t valueToAnd = (instruction) & 0b00000000011111;
+        valueToAnd = ExtendSign(valueToAnd, 5);
+
+        reg[destinationRegister] = reg[firstRegister] & valueToAnd;
+    }
+    else // normal mode
+    {
+        uint16_t secondRegister = (instruction) & 0x7;
+        reg[destinationRegister] = reg[firstRegister] & reg[secondRegister];
     }
 
+    UpdateFlags(static_cast<REGISTER>(destinationRegister));
     return;
+    
+}
+
+void Register::Br(const uint16_t& instruction)
+{
+    // xxxx x x x xxxxxxxxx
+    // inst n z p PCOffset9
+    bool nInstructionFlagSet = (instruction >> 11) & 0x1;
+    bool zInstructionFlagSet = (instruction >> 10) & 0x1;
+    bool pInstructionFlagSet = (instruction >> 9) & 0x1;
+
+    bool nRegisterSet = reg[R_COND] & 0x1;
+    bool zRegisterSet = reg[R_COND] & 0x2;
+    bool pRegisterSet = reg[R_COND] & 0x4;
+
+    if ((nInstructionFlagSet && nRegisterSet) || (zInstructionFlagSet && zRegisterSet) || (pInstructionFlagSet && pRegisterSet)) 
+    {
+        // May have to increment the program counter again or differently according to specification
+        reg[R_PC] = reg[R_PC] + ExtendSign(instruction & 0b0000000111111111, 9);
+    }
+}
+
+void Register::SetValueInRegister(REGISTER regIndex, uint16_t value)
+{
+    Register::reg[regIndex] = value;
 }
 
 void Register::ProcessWord()
