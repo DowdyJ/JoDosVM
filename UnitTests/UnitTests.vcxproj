@@ -92,7 +92,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\LC3;C:\Users\joeld\source\repos\JoDosVM\LC3;$(VCInstallDir)UnitTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\Assembler\;C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\LC3;C:\Users\joeld\source\repos\JoDosVM\LC3;$(VCInstallDir)UnitTest\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <UseFullPaths>true</UseFullPaths>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -100,7 +100,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\LC3\x64\Debug\Register.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\LC3\x64\Debug\Register.obj;C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\Assembler\x64\Debug\Assembler.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -157,6 +157,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AssemblerUnitTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -169,6 +170,9 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Assembler\Assembler.vcxproj">
+      <Project>{a1d737fe-e44a-49dd-b6b6-1f3bb05b24f5}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\LC3\LC3.vcxproj">
       <Project>{81980a9a-1f3b-40ec-ae6c-f90e25a978cd}</Project>
     </ProjectReference>

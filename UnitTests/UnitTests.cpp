@@ -7,7 +7,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace UnitTests
 {
-	TEST_CLASS(UnitTests)
+	TEST_CLASS(LC3MachineTests)
 	{
 	public:
 		TEST_METHOD(AddPositiveNumberMethod1)
