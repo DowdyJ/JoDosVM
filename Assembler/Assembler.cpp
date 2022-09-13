@@ -4,6 +4,8 @@
 
 vector<string> Assembler::_errors;
 
+
+//Assumes all labels have been converted to 16 bit offsets in decimal form without pound sign
 void Assembler::AssembleIntoBinary(const vector<vector<string>>& inputTokens)
 {
 	for (size_t i = 0; i < inputTokens.size(); i++)
@@ -105,9 +107,9 @@ void Assembler::AddError(const string& errorMessage)
 	_errors.push_back(errorMessage);
 }
 
-void Assembler::LogErrors(std::vector<std::string>& errorString)
+void Assembler::LogErrors(std::vector<std::string>& errorString, Logger logger)
 {
-	
+	logger.Log(errorString);
 }
 
 bool Assembler::IsADecimalNumber(const string& token)
@@ -118,7 +120,7 @@ bool Assembler::IsADecimalNumber(const string& token)
 	return false;
 }
 
-uint16_t Assembler::Get5BitImm5(const string& token)
+uint16_t Assembler::Get5BitImm5FromDecimal(const string& token)
 {
 	int imm5Value = ConvertToDecimal(token, _errors);
 
@@ -128,6 +130,45 @@ uint16_t Assembler::Get5BitImm5(const string& token)
 	}
 
 	return static_cast<uint16_t>(imm5Value) & 0x1f;
+
+}
+
+uint16_t Assembler::Get6BitOffsetFromDecimal(const string& token)
+{
+	int imm6Value = ConvertToDecimal(token, _errors);
+
+	if (imm6Value > 31 || imm6Value < -32)
+	{
+		_errors.push_back("Value for imm6 was out of range of allowed values. Value was: " + imm6Value);
+	}
+
+	return static_cast<uint16_t>(imm6Value) & 0x3f;
+
+}
+
+uint16_t Assembler::Get9BitPCOffsetFromPureDecimal(const string& token) 
+{
+	int rawOffset = std::stoi(token);
+
+	if (rawOffset < -256 || rawOffset > 255)
+	{
+		_errors.push_back("pcOffset9 was out of range of allowed values. Value was: " + rawOffset);
+	}
+
+	return static_cast<uint16_t>(rawOffset) & 0x1ff;
+	
+}
+
+uint16_t Assembler::Get11BitPCOffsetFromPureDecimal(const string& token)
+{
+	int rawOffset = std::stoi(token);
+
+	if (rawOffset < -1024 || rawOffset > 1023)
+	{
+		_errors.push_back("pcOffset11 was out of range of allowed values. Value was: " + rawOffset);
+	}
+
+	return static_cast<uint16_t>(rawOffset) & 0x7ff;
 
 }
 
@@ -183,7 +224,7 @@ uint16_t Assembler::HandleADDConversion(const vector<string>& instruction)
 	if (IsADecimalNumber(instruction[3]))
 	{
 		mode = 0x20;
-		imm5 = Get5BitImm5(instruction[3]);
+		imm5 = Get5BitImm5FromDecimal(instruction[3]);
 	}
 	else 
 	{
@@ -211,7 +252,7 @@ uint16_t Assembler::HandleANDConversion(const vector<string>& instruction)
 	if (IsADecimalNumber(instruction[3]))
 	{
 		mode = 0x20;
-		imm5 = Get5BitImm5(instruction[3]);
+		imm5 = Get5BitImm5FromDecimal(instruction[3]);
 	}
 	else
 	{
@@ -241,7 +282,39 @@ uint16_t Assembler::HandleNOTConversion(const vector<string>& instruction)
 
 uint16_t Assembler::HandleBRConversion(const vector<string>& instruction)
 {
-	return uint16_t();
+	if (instruction.size() != 2)
+	{
+		_errors.push_back("Incorrect number of tokens for AND. Recieved " + std::to_string(instruction.size()) + ", expected 2");
+		return 0;
+	}
+
+	uint16_t baseInstruction = 0b0000000000000000;
+
+	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[1]);
+
+	uint16_t flags = 0;
+
+	if (instruction[0] == "BR") 
+	{
+		flags |= 0x7;
+	}
+	else 
+	{
+		for (size_t i = 0; i < instruction[0].size(); i++)
+		{
+			char letter = instruction[0][i];
+
+			if (letter == 'N')
+				flags |= 0x4;
+			if (letter == 'Z')
+				flags |= 0x2;
+			if (letter == 'P')
+				flags |= 0x1;
+		}
+	}
+	flags <<= 9;
+
+	return baseInstruction | flags | pcOffset9;
 }
 
 uint16_t Assembler::HandleJMPConversion(const vector<string>& instruction)
@@ -277,7 +350,30 @@ uint16_t Assembler::HandleJMPConversion(const vector<string>& instruction)
 
 uint16_t Assembler::HandleJSRConversion(const vector<string>& instruction)
 {
-	return uint16_t();
+	if (instruction.size() != 2)
+	{
+		_errors.push_back("Incorrect number of tokens for JSR/JSRR. Recieved " + std::to_string(instruction.size()) + ", expected 2");
+	}
+	if (instruction.size() < 2)
+		return 0;
+
+
+	uint16_t baseInstruction = 0x4000;
+	uint16_t flag = 0;
+	uint16_t baseR = 0;
+	uint16_t pcOffset11 = 0;
+
+	if (instruction[0] == "JSRR") 
+	{
+		baseR = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 6;
+	}
+	else //JSR 
+	{
+		flag = 0x800;
+		pcOffset11 = Get11BitPCOffsetFromPureDecimal(instruction[1]);
+	}
+
+	return baseInstruction | flag | baseR | pcOffset11;
 }
 
 uint16_t Assembler::HandleLDConversion(const vector<string>& instruction)
@@ -292,40 +388,113 @@ uint16_t Assembler::HandleLDConversion(const vector<string>& instruction)
 		return 0;
 
 	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
-	uint16_t pcOffset9 = 0;
+	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
 
-	//Make labels work;
-	return 0;
+	return baseInstruction | dr | pcOffset9;
 }
 
 uint16_t Assembler::HandleLDIConversion(const vector<string>& instruction)
 {
-	return uint16_t();
+	uint16_t baseInstruction = 0xA000;
+
+	if (instruction.size() != 3)
+	{
+		_errors.push_back("Incorrect number of tokens for LDI. Recieved " + std::to_string(instruction.size()) + ", expected 3");
+	}
+	if (instruction.size() < 3)
+		return 0;
+
+	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
+	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+
+	return baseInstruction | dr | pcOffset9;
 }
 
 uint16_t Assembler::HandleLDRConversion(const vector<string>& instruction)
 {
-	return uint16_t();
+	uint16_t baseInstruction = 0x6000;
+
+	if (instruction.size() != 4)
+	{
+		_errors.push_back("Incorrect number of tokens for LDR. Recieved " + std::to_string(instruction.size()) + ", expected 4");
+	}
+	if (instruction.size() < 4)
+		return 0;
+
+	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
+	uint16_t baseR = ConvertRegisterStringsTo3BitAddress(instruction[2], _errors) << 6;
+	uint16_t offset6 = Get6BitOffsetFromDecimal(instruction[3]);
+
+	return baseInstruction | dr | baseR | offset6;
 }
 
 uint16_t Assembler::HandleLEAConversion(const vector<string>& instruction)
 {
-	return uint16_t();
+	uint16_t baseInstruction = 0xE000;
+
+	if (instruction.size() != 3)
+	{
+		_errors.push_back("Incorrect number of tokens for LEA. Recieved " + std::to_string(instruction.size()) + ", expected 3");
+	}
+	if (instruction.size() < 3)
+		return 0;
+
+	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
+	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+
+	return baseInstruction | dr | pcOffset9;
 }
 
 uint16_t Assembler::HandleSTConversion(const vector<string>& instruction)
 {
-	return uint16_t();
+	uint16_t baseInstruction = 0x3000;
+
+	if (instruction.size() != 3)
+	{
+		_errors.push_back("Incorrect number of tokens for ST. Recieved " + std::to_string(instruction.size()) + ", expected 3");
+	}
+	if (instruction.size() < 3)
+		return 0;
+
+	uint16_t sr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
+	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+
+	return baseInstruction | sr | pcOffset9;
 }
 
 uint16_t Assembler::HandleSTIConversion(const vector<string>& instruction)
 {
-	return uint16_t();
+	uint16_t baseInstruction = 0xB000;
+
+	if (instruction.size() != 3)
+	{
+		_errors.push_back("Incorrect number of tokens for STI. Recieved " + std::to_string(instruction.size()) + ", expected 3");
+	}
+	if (instruction.size() < 3)
+		return 0;
+
+	uint16_t sr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
+	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+
+	return baseInstruction | sr | pcOffset9;
 }
 
 uint16_t Assembler::HandleSTRConversion(const vector<string>& instruction)
 {
-	return uint16_t();
+	uint16_t baseInstruction = 0x7000;
+
+	if (instruction.size() != 4)
+	{
+		_errors.push_back("Incorrect number of tokens for STR. Recieved " + std::to_string(instruction.size()) + ", expected 4");
+	}
+	if (instruction.size() < 4)
+		return 0;
+
+	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
+	uint16_t baseR = ConvertRegisterStringsTo3BitAddress(instruction[2], _errors) << 6;
+	uint16_t offset6 = Get6BitOffsetFromDecimal(instruction[3]);
+
+	return baseInstruction | dr | baseR | offset6;
 }
 
 uint16_t Assembler::HandleTRAPConversion(const vector<string>& instruction)

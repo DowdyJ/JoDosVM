@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "Logger.h"
 
 #define private public
 
@@ -23,15 +24,18 @@ public:
 
 	void AddError(const string& errorMessage);
 
-	static void LogErrors(std::vector<std::string>& errorString);
+	static void LogErrors(std::vector<std::string>& errorString, Logger logger);
 
 private:
 	static vector<string> _errors;
 
 	static bool IsADecimalNumber(const string& token);
 
-	static uint16_t Get5BitImm5(const string& token);
-
+	static uint16_t Get5BitImm5FromDecimal(const string& token);
+	//"pure" decimals are literal numbers e.g. 5, 7, 12. They are from converted labels. Other decimals are in assembly format e.g. #7, #8
+	static uint16_t Get9BitPCOffsetFromPureDecimal(const string& token);
+	static uint16_t Get11BitPCOffsetFromPureDecimal(const string& token);
+	static uint16_t Get6BitOffsetFromDecimal(const string& token);
 	static int ConvertToDecimal(const string& token, vector<string>& errors);
 	static uint16_t ConvertRegisterStringsTo3BitAddress(const string& registerName, vector<string>& errors);
 
