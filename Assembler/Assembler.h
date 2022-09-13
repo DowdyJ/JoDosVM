@@ -12,7 +12,7 @@ using std::string;
 class Assembler 
 {
 public:
-	static void AssembleIntoBinary(const vector<vector<string>>& inputTokens);
+	static vector<uint16_t> AssembleIntoBinary(const vector<vector<string>>& inputTokens);
 
 	static vector<vector<string>> GetTokenizedInputStrings(const vector<string>& inputString);
 
@@ -20,11 +20,14 @@ public:
 
 	static void RemoveAllTextAfterAndIncludingENDMacro(vector<string>& linifiedFile);
 
+	//not implemented
 	static void RemoveExcessWhiteSpaceFromLine(string& inputLine);
 
 	void AddError(const string& errorMessage);
 
-	static void LogErrors(std::vector<std::string>& errorString, Logger logger);
+	static void LogErrors(Logger& logger);
+
+	static bool AreErrors();
 
 private:
 	static vector<string> _errors;

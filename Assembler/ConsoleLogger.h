@@ -3,7 +3,7 @@
 #include "Logger.h"
 
 
-class ConsoleLogger : Logger
+class ConsoleLogger : public Logger
 {
 	void Log(vector<string> stuffToLog);
 };

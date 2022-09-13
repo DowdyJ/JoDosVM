@@ -6,37 +6,41 @@ vector<string> Assembler::_errors;
 
 
 //Assumes all labels have been converted to 16 bit offsets in decimal form without pound sign
-void Assembler::AssembleIntoBinary(const vector<vector<string>>& inputTokens)
+vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inputTokens)
 {
+	vector<uint16_t> output;
+
 	for (size_t i = 0; i < inputTokens.size(); i++)
 	{
 		string command = Utilities::ToUpperCase(inputTokens[i][0]);		
 
-		if (command == "ADD") { Assembler::HandleADDConversion(inputTokens[i]); }
-		else if (command == "AND") { Assembler::HandleANDConversion(inputTokens[i]); }
-		else if (command == "NOT") { Assembler::HandleADDConversion(inputTokens[i]); }
-		else if (command[0] == 'B' && command[1] == 'R') { Assembler::HandleBRConversion(inputTokens[i]); }
-		else if (command == "JMP") { Assembler::HandleJMPConversion(inputTokens[i]); }
-		else if (command == "JSR") { Assembler::HandleJSRConversion(inputTokens[i]); }
-		else if (command == "LD") { Assembler::HandleLDConversion(inputTokens[i]); }
-		else if (command == "LDR") { Assembler::HandleLDRConversion(inputTokens[i]); }
-		else if (command == "LDI") { Assembler::HandleLDIConversion(inputTokens[i]); }
-		else if (command == "LEA") { Assembler::HandleLEAConversion(inputTokens[i]); }
-		else if (command == "ST") { Assembler::HandleSTConversion(inputTokens[i]); }
-		else if (command == "STI") { Assembler::HandleSTIConversion(inputTokens[i]); }
-		else if (command == "STR") { Assembler::HandleSTRConversion(inputTokens[i]); }
-		else if (command == "TRAP") { Assembler::HandleTRAPConversion(inputTokens[i]); }
+		if (command == "ADD") { output.push_back(Assembler::HandleADDConversion(inputTokens[i])); }
+		else if (command == "AND") { output.push_back(Assembler::HandleANDConversion(inputTokens[i])); }
+		else if (command == "NOT") { output.push_back(Assembler::HandleADDConversion(inputTokens[i])); }
+		else if (command[0] == 'B' && command[1] == 'R') { output.push_back(Assembler::HandleBRConversion(inputTokens[i])); }
+		else if (command == "JMP") { output.push_back(Assembler::HandleJMPConversion(inputTokens[i])); }
+		else if (command == "JSR") { output.push_back(Assembler::HandleJSRConversion(inputTokens[i])); }
+		else if (command == "LD") { output.push_back(Assembler::HandleLDConversion(inputTokens[i])); }
+		else if (command == "LDR") { output.push_back(Assembler::HandleLDRConversion(inputTokens[i])); }
+		else if (command == "LDI") { output.push_back(Assembler::HandleLDIConversion(inputTokens[i])); }
+		else if (command == "LEA") { output.push_back(Assembler::HandleLEAConversion(inputTokens[i])); }
+		else if (command == "ST") { output.push_back(Assembler::HandleSTConversion(inputTokens[i])); }
+		else if (command == "STI") { output.push_back(Assembler::HandleSTIConversion(inputTokens[i])); }
+		else if (command == "STR") { output.push_back(Assembler::HandleSTRConversion(inputTokens[i])); }
+		else if (command == "TRAP") { output.push_back(Assembler::HandleTRAPConversion(inputTokens[i])); }
 		else if (command == "RES") { /*BAD OP CODE*/ }
-		else if (command == "RTI") { Assembler::HandleRTIConversion(inputTokens[i]); }
+		else if (command == "RTI") { output.push_back(Assembler::HandleRTIConversion(inputTokens[i])); }
 		//Assembler only opcodes
-		else if (command == "RET") { Assembler::HandleJMPConversion(inputTokens[i]); }
-		else if (command == "JSRR") { Assembler::HandleJSRConversion(inputTokens[i]); }
+		else if (command == "RET") { output.push_back(Assembler::HandleJMPConversion(inputTokens[i])); }
+		else if (command == "JSRR") { output.push_back(Assembler::HandleJSRConversion(inputTokens[i])); }
 		else 
 		{
 			//BAD OPCODE
 		}
 
 	}
+
+	return output;
 }
 
 vector<vector<string>> Assembler::GetTokenizedInputStrings(const vector<string>& inputString)
@@ -107,9 +111,17 @@ void Assembler::AddError(const string& errorMessage)
 	_errors.push_back(errorMessage);
 }
 
-void Assembler::LogErrors(std::vector<std::string>& errorString, Logger logger)
+bool Assembler::AreErrors() 
 {
-	logger.Log(errorString);
+	if (_errors.size() > 0)
+		return true;
+	
+	return false;
+}
+
+void Assembler::LogErrors(Logger& logger)
+{
+	logger.Log(_errors);
 }
 
 bool Assembler::IsADecimalNumber(const string& token)
