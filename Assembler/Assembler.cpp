@@ -3,11 +3,13 @@
 #include <sstream>
 
 vector<string> Assembler::_errors;
+map<string, uint16_t> Assembler::labelIndexPairs;
 
 
 //Assumes all labels have been converted to 16 bit offsets in decimal form without pound sign
-vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inputTokens)
+vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inputTokens1)
 {
+	vector<vector<string>> inputTokens = inputTokens1;
 	vector<uint16_t> output;
 
 	for (size_t i = 0; i < inputTokens.size(); i++)
@@ -16,8 +18,16 @@ vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inp
 
 		if (command == "ADD") { output.push_back(Assembler::HandleADDConversion(inputTokens[i])); }
 		else if (command == "AND") { output.push_back(Assembler::HandleANDConversion(inputTokens[i])); }
-		else if (command == "NOT") { output.push_back(Assembler::HandleADDConversion(inputTokens[i])); }
-		else if (command[0] == 'B' && command[1] == 'R') { output.push_back(Assembler::HandleBRConversion(inputTokens[i])); }
+		else if (command == "NOT") { output.push_back(Assembler::HandleNOTConversion(inputTokens[i])); }
+		else if (
+			command == "BR" || 
+			command == "BRN" || 
+			command == "BRZ" || 
+			command == "BRP" || 
+			command == "BRZP" ||
+			command == "BRNP" ||
+			command == "BRNZ" ||
+			command == "BRNZP") { output.push_back(Assembler::HandleBRConversion(inputTokens[i])); }
 		else if (command == "JMP") { output.push_back(Assembler::HandleJMPConversion(inputTokens[i])); }
 		else if (command == "JSR") { output.push_back(Assembler::HandleJSRConversion(inputTokens[i])); }
 		else if (command == "LD") { output.push_back(Assembler::HandleLDConversion(inputTokens[i])); }
@@ -28,14 +38,41 @@ vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inp
 		else if (command == "STI") { output.push_back(Assembler::HandleSTIConversion(inputTokens[i])); }
 		else if (command == "STR") { output.push_back(Assembler::HandleSTRConversion(inputTokens[i])); }
 		else if (command == "TRAP") { output.push_back(Assembler::HandleTRAPConversion(inputTokens[i])); }
-		else if (command == "RES") { /*BAD OP CODE*/ }
+		else if (command == "RES") { _errors.push_back("Use of illegal OpCode RES!"); }
 		else if (command == "RTI") { output.push_back(Assembler::HandleRTIConversion(inputTokens[i])); }
 		//Assembler only opcodes
 		else if (command == "RET") { output.push_back(Assembler::HandleJMPConversion(inputTokens[i])); }
 		else if (command == "JSRR") { output.push_back(Assembler::HandleJSRConversion(inputTokens[i])); }
 		else 
 		{
-			_errors.push_back("Unrecognized opcode \"" + command + "\"");
+			if (inputTokens.size() == 1) // Label is on its own line
+			{
+				if (labelIndexPairs.find(inputTokens[i][0]) == labelIndexPairs.end()) // it isnt in the map yet
+				{
+					labelIndexPairs.insert({inputTokens[i][0], i + 1}); // add entry for line below label as the line its on does not contain any opcodes
+				}
+				else 
+				{
+					_errors.push_back("Duplicate label in input: " + inputTokens[i][0]);
+				}
+			}
+			else 
+			{
+				//Run the same line through the loop again, but without the label attached.
+				string label = inputTokens[i][0];
+
+				if (labelIndexPairs.find(label) == labelIndexPairs.end())
+				{
+					labelIndexPairs.insert({label, i});
+				}
+				else 
+				{
+					_errors.push_back("Duplicate label in input: " + inputTokens[i][0]);
+				}
+
+				inputTokens[i].erase(inputTokens[i].begin());
+				i--;
+			}
 		}
 
 	}

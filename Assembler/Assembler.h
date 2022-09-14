@@ -1,11 +1,12 @@
 #pragma once
+#include <map>
 #include <string>
 #include <vector>
 #include "Logger.h"
 
 #define private public
 
-
+using std::map;
 using std::vector;
 using std::string;
 
@@ -31,6 +32,8 @@ public:
 
 private:
 	static vector<string> _errors;
+
+	static map<string, uint16_t> labelIndexPairs;
 
 	static bool IsADecimalNumber(const string& token);
 
