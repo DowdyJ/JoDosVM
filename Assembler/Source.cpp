@@ -3,11 +3,15 @@
 #include <bitset>
 #include <vector>
 #include <string>
+#include <iostream>
+#include <fstream>
 #include "Assembler.h"
 #include "ConsoleLogger.h"
+#include "Utilities.h"
 
 using std::vector;
 using std::string;
+
 
 int main(int argc, char* argv[])
 {
@@ -25,6 +29,10 @@ int main(int argc, char* argv[])
 	//for (const auto& var : tokenizedInput) 	for (const auto& var1 : var) std::cout << var1 << std::endl;
 
 
+
+	
+	vector<uint16_t> outputOfAssembler = Assembler::AssembleIntoBinary(tokenizedInput);
+	
 	if (Assembler::AreErrors())
 	{
 		ConsoleLogger logger = ConsoleLogger();
@@ -32,14 +40,50 @@ int main(int argc, char* argv[])
 		Assembler::LogErrors(logger);
 		return 1;
 	}
-	
-	vector<uint16_t> output = Assembler::AssembleIntoBinary(tokenizedInput);
-	
-	for (auto const& opcode : output) 
+
+	for (auto const& opcode : outputOfAssembler)
 	{
-		std::cout << opcode << std::endl;
+		auto bits = std::bitset<16>(opcode).to_string();
+		std::cout << bits << std::endl;
 	}
-	
+
+
+	for (uint16_t& value : outputOfAssembler)
+	{
+		value = Utilities::SwitchEndianness(value);
+	}
+
+
+	std::ofstream output("ASSEMBLY", std::ios::binary | std::ios::trunc);
+
+	output.write(reinterpret_cast<char*>(&outputOfAssembler[0]), outputOfAssembler.size() * sizeof(uint16_t));
+
+	output.close();
+
+	//Register::SetValueInRegister(Register::R_PC, 0x3000);
+	std::ifstream input("ASSEMBLY", std::ios::binary | std::ios::in);
+
+
+	std::vector<uint16_t> buffer;
+
+	input.seekg(0, std::ios::end);
+	size_t filesize = input.tellg();
+	input.seekg(0, std::ios::beg);
+
+	buffer.resize(filesize / sizeof(uint16_t));
+
+	input.read((char*)buffer.data(), filesize);
+
+	for (auto const& ui : buffer)
+		std::cout << std::bitset<16>(ui) << ' ';
+
+	input.close();
+
+	std::cout << '\n';
+
+
+
+
 
 	return 0;
 }

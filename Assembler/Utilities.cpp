@@ -21,4 +21,10 @@ string Utilities::ToUpperCase(const string& inputString)
 	return upperCaseCommand;
 }
 
+uint16_t Utilities::SwitchEndianness(const uint16_t& inputValue) 
+{
+	return inputValue << 8 | inputValue >> 8;
+}
+
+
 

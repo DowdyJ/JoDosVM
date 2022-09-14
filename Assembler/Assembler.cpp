@@ -35,7 +35,7 @@ vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inp
 		else if (command == "JSRR") { output.push_back(Assembler::HandleJSRConversion(inputTokens[i])); }
 		else 
 		{
-			//BAD OPCODE
+			_errors.push_back("Unrecognized opcode \"" + command + "\"");
 		}
 
 	}
