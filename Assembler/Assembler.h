@@ -15,6 +15,8 @@ class Assembler
 public:
 	static vector<uint16_t> AssembleIntoBinary(const vector<vector<string>>& inputTokens);
 
+	static void ResolveAndReplaceLabels(vector<vector<string>>& inputTokens);
+
 	static vector<vector<string>> GetTokenizedInputStrings(const vector<string>& inputString);
 
 	static void RemoveCommentsFromLine(string& inputLine);
@@ -33,7 +35,9 @@ public:
 private:
 	static vector<string> _errors;
 
-	static map<string, uint16_t> labelIndexPairs;
+	static map<string, uint16_t> BuildLabelAddressMap(vector<vector<string>>& inputTokens, vector<string>& errors);
+	static void ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, vector<string>& errors);
+	//static map<string, uint16_t> labelIndexPairs;
 
 	static bool IsADecimalNumber(const string& token);
 

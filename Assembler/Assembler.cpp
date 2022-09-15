@@ -1,9 +1,10 @@
 #include "Assembler.h"
 #include "Utilities.h"
 #include <sstream>
+#include <iostream>
 
 vector<string> Assembler::_errors;
-map<string, uint16_t> Assembler::labelIndexPairs;
+//map<string, uint16_t> Assembler::labelIndexPairs;
 
 
 //Assumes all labels have been converted to 16 bit offsets in decimal form without pound sign
@@ -11,7 +12,7 @@ vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inp
 {
 	vector<vector<string>> inputTokens = inputTokens1;
 	vector<uint16_t> output;
-
+	
 	for (size_t i = 0; i < inputTokens.size(); i++)
 	{
 		string command = Utilities::ToUpperCase(inputTokens[i][0]);		
@@ -45,39 +46,141 @@ vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inp
 		else if (command == "JSRR") { output.push_back(Assembler::HandleJSRConversion(inputTokens[i])); }
 		else 
 		{
-			if (inputTokens.size() == 1) // Label is on its own line
-			{
-				if (labelIndexPairs.find(inputTokens[i][0]) == labelIndexPairs.end()) // it isnt in the map yet
-				{
-					labelIndexPairs.insert({inputTokens[i][0], i + 1}); // add entry for line below label as the line its on does not contain any opcodes
-				}
-				else 
-				{
-					_errors.push_back("Duplicate label in input: " + inputTokens[i][0]);
-				}
-			}
-			else 
-			{
-				//Run the same line through the loop again, but without the label attached.
-				string label = inputTokens[i][0];
-
-				if (labelIndexPairs.find(label) == labelIndexPairs.end())
-				{
-					labelIndexPairs.insert({label, i});
-				}
-				else 
-				{
-					_errors.push_back("Duplicate label in input: " + inputTokens[i][0]);
-				}
-
-				inputTokens[i].erase(inputTokens[i].begin());
-				i--;
-			}
+			Assembler::_errors.push_back("Unexpected OpCode enctountered on line " + std::to_string(i) + ". OpCode was: " + command);
 		}
 
 	}
 
 	return output;
+}
+
+
+void Assembler::ResolveAndReplaceLabels(vector<vector<string>>& inputTokens)
+{
+	vector<string> opCodesRequiringLabelChecks = 
+	{ "BR", "BRP", "BRN", "BRZ", "BRZP", "BRNP", "BRNZ", "BRNZP",
+	"JSR", "LD", "LDI", "LEA", "ST", "STI"};
+
+	map<string, uint16_t> labelIndexPairs = Assembler::BuildLabelAddressMap(inputTokens, Assembler::_errors);
+
+	Assembler::ReplaceLabelsWithOffsets(inputTokens, opCodesRequiringLabelChecks, labelIndexPairs, Assembler::_errors);
+
+}
+
+void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, vector<string>& errors) 
+{
+	for (size_t i = 0; i < inputTokens.size(); ++i)
+	{
+		for (size_t j = 0; j < opCodesToCheck.size(); j++)
+		{
+			string opcode = inputTokens[i][0];
+			
+			if (opcode == opCodesToCheck[j])
+			{
+				string label;
+
+				if (opcode[0] == 'B' || opcode[0] == 'J') //BR(nzp) and JSR
+				{
+					label = inputTokens[i][1];
+
+					if (labelIndexPairs.find(label) != labelIndexPairs.end())
+					{
+						uint16_t labelLineNumber = labelIndexPairs.at(label);
+						
+						inputTokens[i][1] = std::to_string(static_cast<int>(labelLineNumber) - static_cast<int>(i));
+					}
+					else 
+					{
+						errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i));
+					}
+				}
+				else 
+				{
+					label = inputTokens[i][2];
+
+					if (labelIndexPairs.find(label) != labelIndexPairs.end())
+					{
+						uint16_t labelLineNumber = labelIndexPairs.at(label);
+
+
+						inputTokens[i][2] = std::to_string(static_cast<int>(labelLineNumber) - static_cast<int>(i));
+					}
+					else 
+					{
+						errors.push_back("Unregistered label: " + label + " used in line " + std::to_string(i));
+					}
+				}
+
+				break;
+			}
+		}
+	}
+}
+
+map<string, uint16_t> Assembler::BuildLabelAddressMap(vector<vector<string>>& inputTokens, vector<string>& errors) 
+{
+	vector<string> opCodes = { "ADD", "AND", "JMP", "RET", "JSR", "JSRR", "LD", "LDI", "LDR", "LEA", "NOT", "ST", "STI", "STR", "TRAP", "RTI",
+	"BR", "BRP", "BRN", "BRZ", "BRZP", "BRNP", "BRNZ", "BRNZP" };
+
+
+	map<string, uint16_t> labelIndexPairs;
+
+	for (size_t i = 0; i < inputTokens.size(); ++i)
+	{
+		vector<string> lineOfTokens = inputTokens[i];
+
+		if (lineOfTokens.size() == 1)
+		{
+			string label = lineOfTokens[0];
+
+			if (std::find(opCodes.begin(), opCodes.end(), label) == opCodes.end())
+			{
+				if (labelIndexPairs.find(label) == labelIndexPairs.end())
+				{
+					labelIndexPairs.insert({ label, i });
+					inputTokens[i].erase(inputTokens[i].begin());
+					i--;
+				}
+				else
+				{
+					errors.push_back("Duplicate label in input: " + lineOfTokens[0]);
+				}
+			}
+		}
+		else
+		{
+			//Run the same line through the loop again, but without the label attached.
+			string label = lineOfTokens[0];
+
+			if (std::find(opCodes.begin(), opCodes.end(), label) == opCodes.end())
+			{
+				if (labelIndexPairs.find(label) == labelIndexPairs.end())
+				{
+					labelIndexPairs.insert({ label, i });
+					inputTokens[i].erase(inputTokens[i].begin());
+					i--;
+				}
+				else
+				{
+					errors.push_back("Duplicate label in input: " + lineOfTokens[0]);
+				}
+			}
+		}
+		
+	}
+
+	if (labelIndexPairs.size() > 0)
+	{
+		for (auto itr = labelIndexPairs.begin(); itr != labelIndexPairs.end(); ++itr)
+		{
+			std::cout << itr->first << " : " << itr->second << std::endl;
+		}
+	}
+
+
+
+
+	return labelIndexPairs;
 }
 
 vector<vector<string>> Assembler::GetTokenizedInputStrings(const vector<string>& inputString)

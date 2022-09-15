@@ -24,10 +24,10 @@ int main(int argc, char* argv[])
 
 	input.close();
 
+	std::cout << "Recieved the following raw input: " << std::endl;
+
 	for (string const& line : fileAsLines)
 		std::cout << line << '\n';
-
-	
 
 	Assembler::RemoveAllTextAfterAndIncludingENDMacro(fileAsLines);
 
@@ -36,6 +36,17 @@ int main(int argc, char* argv[])
 
 	vector<vector<string>> tokenizedInput = Assembler::GetTokenizedInputStrings(fileAsLines);
 	
+	Assembler::ResolveAndReplaceLabels(tokenizedInput);
+
+	std::cout << "Recieved the following parsed input: " << std::endl;
+
+	for (size_t lineIndex = 0; lineIndex < tokenizedInput.size(); ++lineIndex) 
+	{
+		std::cout << Utilities::ConcatenateStrings(tokenizedInput[lineIndex], ' ') << std::endl;
+	}
+
+
+
 	vector<uint16_t> outputOfAssembler = Assembler::AssembleIntoBinary(tokenizedInput);
 	
 	if (Assembler::AreErrors())
@@ -44,6 +55,10 @@ int main(int argc, char* argv[])
 
 		Assembler::LogErrors(logger);
 		return 1;
+	}
+	else 
+	{
+		std::cout << "No errors were encountered during assembly.";
 	}
 
 	for (uint16_t& value : outputOfAssembler)
@@ -57,16 +72,13 @@ int main(int argc, char* argv[])
 	if (output.is_open())
 	{
 		output.write(reinterpret_cast<char*>(&outputOfAssembler[0]), outputOfAssembler.size() * sizeof(uint16_t));
+		
 		output.close();
+
+		std::cout << "Assembly complete." << std::endl;
 	}
 
-	if (Assembler::labelIndexPairs.size() > 0)
-	{
-		for (auto itr = Assembler::labelIndexPairs.begin(); itr != Assembler::labelIndexPairs.end(); ++itr)
-		{
-			std::cout << itr->first << " : " << itr->second << std::endl;
-		}
-	}
+
 
 
 

@@ -26,5 +26,15 @@ uint16_t Utilities::SwitchEndianness(const uint16_t& inputValue)
 	return inputValue << 8 | inputValue >> 8;
 }
 
+string Utilities::ConcatenateStrings(vector<string> lineToConcat, char delimitingCharacter)
+{
+	string result;
 
+	for (string token : lineToConcat) 
+	{
+		result += (token + delimitingCharacter);
+	}
+
+	return result;
+}
 
