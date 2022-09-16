@@ -7,6 +7,22 @@ class Register
 {
 
 public:
+    const enum 
+    {
+        MR_KBSR = 0xFE00, /* keyboard status */
+        MR_KBDR = 0xFE02  /* keyboard data */
+    };
+
+    enum
+    {
+        TRAP_GETC = 0x20,  /* get character from keyboard, not echoed onto the terminal */
+        TRAP_OUT = 0x21,   /* output a character */
+        TRAP_PUTS = 0x22,  /* output a word string */
+        TRAP_IN = 0x23,    /* get character from keyboard, echoed onto the terminal */
+        TRAP_PUTSP = 0x24, /* output a byte string */
+        TRAP_HALT = 0x25   /* halt the program */
+    };
+
     const enum OPCODE
     {
         OP_BR = 0, /* branch */
@@ -53,6 +69,10 @@ public:
 	
     ~Register();
 
+    static uint16_t ReadMemoryAt(uint16_t address);
+
+    static void WriteMemoryAt(uint16_t address, uint16_t value);
+
     static void UpdateFlags(REGISTER regIndex);
 
     static void ProcessProgram();
@@ -84,6 +104,8 @@ public:
     static void Sti(const uint16_t& instruction);
 
     static void Str(const uint16_t& instruction);
+    
+    static void Trap(const uint16_t& instruction);
 
 #pragma endregion
 
@@ -110,6 +132,8 @@ private:
     }
 
     static void ProcessWord();
+
+    static bool shouldBeRunning;
 
     static uint16_t reg[R_COUNT];
 

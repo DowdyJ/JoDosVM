@@ -1,4 +1,8 @@
 #include "Register.h"
+#include "ExternalUtilities.h"
+#include <string>
+#include <iostream>
+#include <exception>
 
 Register::Register()
 {
@@ -8,9 +12,15 @@ Register::~Register()
 {
 }
 
-uint16_t Register::reg[R_COUNT];
-uint16_t Register::memory[MEM_MAX];
+void Register::WriteMemoryAt(uint16_t address, uint16_t value)
+{
+    if (address < MEM_MAX)
+        memory[address] = value;
+}
 
+uint16_t Register::reg[R_COUNT];
+uint16_t Register::memory[MEM_MAX] = {0};
+bool Register::shouldBeRunning = false;
 
 void Register::UpdateFlags(REGISTER regIndex)
 {
@@ -30,7 +40,39 @@ void Register::UpdateFlags(REGISTER regIndex)
     }
 }
 
-uint16_t mem_read(uint16_t address) { return 0; }
+
+
+uint16_t Register::ReadMemoryAt(uint16_t address) 
+{
+    try
+    {
+        if (address > MEM_MAX - 1)
+        {
+            throw (address);
+        }
+    }
+    catch (uint16_t address)
+    {
+        std::cout << "Attempted to read data outside of MEM_MAX. Attempted Address was: " << address << std::endl;
+        return 0;
+    }
+
+    if (address == Register::MR_KBSR)
+    {
+        if (ExternalUtilities::check_key())
+        {
+            Register::memory[Register::MR_KBSR] = (1 << 15);
+            Register::memory[Register::MR_KBDR] = getchar();
+        }
+        else 
+        {
+            Register::memory[Register::MR_KBSR] = 0;
+        }
+    }
+    
+    return Register::memory[address];
+}
+
 
 void Register::ProcessProgram()
 {
@@ -236,6 +278,67 @@ void Register::Str(const uint16_t& instruction)
     return;
 }
 
+void Register::Trap(const uint16_t& instruction) 
+{
+    switch (instruction & 0xFF)
+    {
+    case TRAP_GETC:
+    {
+        char letter = std::getchar();
+        SetValueInRegister(R_R0, static_cast<uint16_t>(letter) & 0xFF);
+        UpdateFlags(R_R0);
+        break;
+    }
+    case TRAP_HALT:
+    {
+        std::cout << "HALT" << std::endl;
+        shouldBeRunning = false;
+        break;
+    }
+    case TRAP_IN:
+    {
+        std::cout << "Input a character: ";
+        char letter = std::getchar();
+        SetValueInRegister(R_R0, static_cast<uint16_t>(letter) & 0xFF);
+        UpdateFlags(R_R0);
+        std::cout << letter;
+        break;
+    }
+    case TRAP_OUT:
+    {
+        char letter = ReadMemoryAt(GetValueInReg(R_R0)) && 0xFF;
+        std::cout << letter;
+        break;
+    }
+    case TRAP_PUTS:
+    {
+        uint16_t index = 0;
+        while (char letter = ReadMemoryAt(GetValueInReg(R_R0) + index) & 0xFF)
+        {
+            std::cout << letter;
+            ++index;
+        }
+
+        break;
+    }
+    case TRAP_PUTSP:
+    {
+        uint16_t index = 0;
+        
+        while (char letter = ReadMemoryAt(GetValueInReg(R_R0) + index) & 0xFF << ((index % 2) * 8))
+        {
+            std::cout << letter;
+            ++index;
+        }
+
+        break;
+    }
+    default:
+        std::cout << "Error in execution of trap code: " << std::to_string(instruction & 0xFF) << std::endl;
+        break;
+    }
+}
+
 void Register::Br(const uint16_t& instruction)
 {
     // xxxx x x x xxxxxxxxx
@@ -267,7 +370,7 @@ void Register::HandleBadOpCode(const uint16_t& instruction)
 
 void Register::ProcessWord()
 {
-    uint16_t instr = mem_read(reg[R_PC]++);
+    uint16_t instr = ReadMemoryAt(reg[R_PC]++);
     uint16_t op = instr >> 12;
 
     switch (op)
@@ -312,6 +415,7 @@ void Register::ProcessWord()
         Register::Str(instr);
         break;
     case OP_TRAP:
+        Register::Trap(instr);
         break;
     case OP_RES:
         Register::HandleBadOpCode(instr);

@@ -100,7 +100,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(VCInstallDir)UnitTest\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\LC3\x64\Debug\Register.obj;C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\Assembler\x64\Debug\Assembler.obj;C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\Assembler\x64\Debug\Utilities.obj;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\LC3\x64\Debug\Register.obj;C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\Assembler\x64\Debug\Assembler.obj;C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\Assembler\x64\Debug\Utilities.obj;C:\Users\joeld\OneDrive\Documents\Programming\JoDosVM\LC3\x64\Debug\ExternalUtilities.obj;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
