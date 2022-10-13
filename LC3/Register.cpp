@@ -82,8 +82,7 @@ void Register::ProcessProgram()
 
     reg[R_PC] = PC_START;
 
-    int running = 1;
-    while (running)
+    while (Register::shouldBeRunning)
     {
         ProcessWord();
     }

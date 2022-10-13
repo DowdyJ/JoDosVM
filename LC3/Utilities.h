@@ -6,5 +6,6 @@ using std::string;
 class Utilities 
 {
 public:
-	static void LoadFileInto(string filename, uint16_t* test, uint16_t numberToRead);
+	// Returns PC start
+	static uint16_t LoadFileInto(string filename, uint16_t* test, uint16_t numberToRead, bool swapEndianness);
 };

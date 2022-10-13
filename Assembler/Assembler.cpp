@@ -1,7 +1,6 @@
 #include "Assembler.h"
 #include "Utilities.h"
-#include <sstream>
-#include <iostream>
+
 
 vector<string> Assembler::_errors;
 //map<string, uint16_t> Assembler::labelIndexPairs;
@@ -16,6 +15,14 @@ vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inp
 	for (size_t i = 0; i < inputTokens.size(); i++)
 	{
 		string command = Utilities::ToUpperCase(inputTokens[i][0]);		
+
+		//Custom opcode inserted by macro processing. Resulting "instruction is" LITeral value of the operand.
+		if (command == "LIT") 
+		{
+			output.push_back(Assembler::HandleLITConversion(inputTokens[i]));
+			continue;
+		}
+
 
 		if (command == "ADD") { output.push_back(Assembler::HandleADDConversion(inputTokens[i])); }
 		else if (command == "AND") { output.push_back(Assembler::HandleANDConversion(inputTokens[i])); }
@@ -120,7 +127,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 map<string, uint16_t> Assembler::BuildLabelAddressMap(vector<vector<string>>& inputTokens, vector<string>& errors) 
 {
 	vector<string> opCodes = { "ADD", "AND", "JMP", "RET", "JSR", "JSRR", "LD", "LDI", "LDR", "LEA", "NOT", "ST", "STI", "STR", "TRAP", "RTI",
-	"BR", "BRP", "BRN", "BRZ", "BRZP", "BRNP", "BRNZ", "BRNZP" };
+	"BR", "BRP", "BRN", "BRZ", "BRZP", "BRNP", "BRNZ", "BRNZP", "LIT" };
 
 
 	map<string, uint16_t> labelIndexPairs;
@@ -132,8 +139,8 @@ map<string, uint16_t> Assembler::BuildLabelAddressMap(vector<vector<string>>& in
 		if (lineOfTokens.size() == 1)
 		{
 			string label = lineOfTokens[0];
-
-			if (std::find(opCodes.begin(), opCodes.end(), label) == opCodes.end())
+			
+			if (std::find(std::begin(opCodes), std::end(opCodes), label) == opCodes.end())
 			{
 				if (labelIndexPairs.find(label) == labelIndexPairs.end())
 				{
@@ -384,6 +391,12 @@ uint16_t Assembler::HandleADDConversion(const vector<string>& instruction)
 	}
 
 	return baseInstruction | dr | sr1 | sr2 | imm5 | mode;
+}
+
+uint16_t Assembler::HandleLITConversion(const vector<string>& instruction) 
+{
+
+	return 1;
 }
 
 uint16_t Assembler::HandleANDConversion(const vector<string>& instruction)

@@ -1,10 +1,12 @@
 #pragma once
 #include <map>
+#include <algorithm>
 #include <string>
 #include <vector>
-#include "Logger.h"
+#include <sstream>
+#include <iostream>
 
-#define private public
+#include "Logger.h"
 
 using std::map;
 using std::vector;
@@ -49,6 +51,8 @@ private:
 	static int ConvertToDecimal(const string& token, vector<string>& errors);
 	static uint16_t ConvertRegisterStringsTo3BitAddress(const string& registerName, vector<string>& errors);
 
+	static uint16_t HandleLITConversion(const vector<string>& instruction);
+	
 	static uint16_t HandleADDConversion(const vector<string>& instruction);
 	static uint16_t HandleANDConversion(const vector<string>& instruction);
 	static uint16_t HandleNOTConversion(const vector<string>& instruction);

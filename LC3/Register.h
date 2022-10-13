@@ -1,13 +1,12 @@
 #pragma once
 #include <cstdint>
 #define MEM_MAX (1 << 15)
-#define private public
 
 class Register
 {
 
 public:
-    const enum 
+    enum 
     {
         MR_KBSR = 0xFE00, /* keyboard status */
         MR_KBDR = 0xFE02  /* keyboard data */
@@ -23,7 +22,7 @@ public:
         TRAP_HALT = 0x25   /* halt the program */
     };
 
-    const enum OPCODE
+    enum OPCODE
     {
         OP_BR = 0, /* branch */
         OP_ADD,    /* add  */
@@ -43,7 +42,7 @@ public:
         OP_TRAP    /* execute trap */
     };
 
-    const enum REGISTER
+    enum REGISTER
     {
         R_R0 = 0,
         R_R1,
@@ -58,7 +57,7 @@ public:
         R_COUNT
     };
 
-    const enum FLAGS
+    enum FLAGS
     {
         FL_POS = 1 << 0, /* P */
         FL_ZRO = 1 << 1, /* Z */
@@ -107,7 +106,7 @@ public:
     
     static void Trap(const uint16_t& instruction);
 
-#pragma endregion
+    #pragma endregion
 
     static void HandleBadOpCode(const uint16_t& instruction);
 
@@ -118,7 +117,8 @@ public:
         return reg[regIndex];
     }
 
-private:
+    static bool shouldBeRunning;
+
     static void SetValueInRegister(REGISTER regIndex, uint16_t value);
 
 
@@ -133,14 +133,8 @@ private:
 
     static void ProcessWord();
 
-    static bool shouldBeRunning;
-
     static uint16_t reg[R_COUNT];
 
     static uint16_t memory[MEM_MAX];
 
 };
-
-
-
-#undef private

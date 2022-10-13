@@ -13,40 +13,18 @@
 #define PC_START 0x3000
 
 
-bool ReadLC3ObjFile() 
-{
-	return true;
-}
-
-
-
 int main(int argc, char* argv[])
 {
-	uint16_t dog[200] = {};
-	Utilities::LoadFileInto("ASSEMBLY", &dog[0], 200);
-
-	for (size_t i = 0; i < 200; i++)
-	{
-		std::cout << std::to_string(dog[i]) << std::endl;
-	}
-
-	std::cout << "Finished reading file UwU" << std::endl;
-
 	if (argc < 2)
 	{
 		std::cout << "Usage: LC3 path/to/file.obj" << std::endl;
 		return 2;
 	}
-	else 
-	{
-		for (size_t i = 1; i < argc; ++i)
-		{
-			if (!ReadLC3ObjFile())
-			{
-				std::cout << "Error reading file at: " << argv[i] << std::endl;
-			}
-		}
-	}
+
+	uint16_t executableOrigin = Utilities::LoadFileInto(argv[1], Register::memory, MEM_MAX, true);
+
+	std::cout << "Finished loading file." << std::endl;
+
 
 
 	ExternalUtilities EUtils;
@@ -56,20 +34,11 @@ int main(int argc, char* argv[])
 	Register::SetValueInRegister(Register::R_PC, PC_START);
 
 	Register::shouldBeRunning = true;
-	while (Register::shouldBeRunning)
-	{
-	
-	
-	}
 
+	Register::ProcessProgram();
 
-
-
-
-
-	//Register::SetValueInRegister(Register::R_PC, 0x3000);
+/*
 	std::ifstream input("TEST", std::ios::binary | std::ios::in);
-	
 	
 	std::vector<uint16_t> buffer;
 
@@ -88,7 +57,7 @@ int main(int argc, char* argv[])
 
 	std::cout << '\n';
 
-
+*/
 	EUtils.CleanUp();
 	
 

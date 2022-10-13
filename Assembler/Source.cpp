@@ -15,7 +15,14 @@ using std::string;
 
 int main(int argc, char* argv[])
 {
-	std::ifstream input("INPUT", std::ios::in);
+	if (argc < 2)
+	{
+		std::cout << "Need relative path to input file!" << std::endl;
+		return 1;
+	}
+	string inputFilePath = argv[1];
+
+	std::ifstream input(inputFilePath, std::ios::in);
 
 	vector<string> fileAsLines;
 	string currentLine;
@@ -38,7 +45,7 @@ int main(int argc, char* argv[])
 	
 	Assembler::ResolveAndReplaceLabels(tokenizedInput);
 
-	std::cout << "Recieved the following parsed input: " << std::endl;
+	std::cout << "\nRecieved the following parsed input: " << std::endl;
 
 	for (size_t lineIndex = 0; lineIndex < tokenizedInput.size(); ++lineIndex) 
 	{
