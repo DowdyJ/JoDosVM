@@ -25,7 +25,12 @@ int main(int argc, char* argv[])
 
 	std::cout << "Finished loading file." << std::endl;
 
-
+	size_t sizeOfArray = sizeof(Register::memory) / sizeof(uint16_t);
+	for (size_t i = 0; i < sizeOfArray; i++)
+	{
+		std::cout << Register::memory[i] << (i % 32 == 0 ? "\n" : "");
+	}
+	
 
 	ExternalUtilities EUtils;
 

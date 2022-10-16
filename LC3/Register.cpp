@@ -46,7 +46,7 @@ uint16_t Register::ReadMemoryAt(uint16_t address)
 {
     try
     {
-        if (address > MEM_MAX - 1)
+        if (address > (uint16_t)(MEM_MAX))
         {
             throw (address);
         }
@@ -77,10 +77,6 @@ uint16_t Register::ReadMemoryAt(uint16_t address)
 void Register::ProcessProgram()
 {
     reg[R_COND] = FL_ZRO;
-
-    enum { PC_START = 0x3000 };
-
-    reg[R_PC] = PC_START;
 
     while (Register::shouldBeRunning)
     {
