@@ -5,7 +5,7 @@
 
 using std::vector;
 
-uint16_t Utilities::LoadFileInto(string filename, uint16_t* memory, uint16_t memorySize, bool swapEndianness)
+uint16_t Utilities::LoadFileInto(string filename, uint16_t* memory, int memorySize, bool swapEndianness)
 {
 	std::ifstream input(filename, std::ios::in | std::ios::binary);
 
@@ -18,14 +18,16 @@ uint16_t Utilities::LoadFileInto(string filename, uint16_t* memory, uint16_t mem
 	uint16_t startAddress;
 	input.read(reinterpret_cast<char*>(&startAddress), 2);
 
+	input.seekg(0, input.end);
+	uint16_t lengthOfFile = input.tellg() / 2;
+	input.seekg(0, input.beg);
+
 	if (swapEndianness)
 		startAddress = startAddress << 8 | startAddress >> 8;
 
 	std::cout << "Start address read as " << startAddress << std::endl;
 	
-	input.seekg(0, input.end);
-	uint16_t lengthOfFile = input.tellg() / 2;
-	input.seekg(0, input.beg);
+
 	
 	std::cout << "Length of file read as: " << std::to_string(lengthOfFile) << " words" << std::endl;
 

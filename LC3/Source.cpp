@@ -10,9 +10,6 @@
 #include <stdint.h>
 
 
-#define PC_START 0x3000
-
-
 int main(int argc, char* argv[])
 {
 	if (argc < 2)
@@ -25,18 +22,12 @@ int main(int argc, char* argv[])
 
 	std::cout << "Finished loading file." << std::endl;
 
-	size_t sizeOfArray = sizeof(Register::memory) / sizeof(uint16_t);
-	for (size_t i = 0; i < sizeOfArray; i++)
-	{
-		std::cout << Register::memory[i] << (i % 32 == 0 ? "\n" : "");
-	}
-	
 
 	ExternalUtilities EUtils;
 
 	EUtils.Init();
 
-	Register::SetValueInRegister(Register::R_PC, PC_START);
+	Register::SetValueInRegister(Register::R_PC, executableOrigin);
 
 	Register::shouldBeRunning = true;
 

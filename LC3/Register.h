@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#define MEM_MAX (1 << 15)
+#define MEM_MAX (1 << 16)
 
 class Register
 {
@@ -125,7 +125,8 @@ public:
     static inline uint16_t ExtendSign(const uint16_t& value, const int& bitCount)
     {
         uint16_t valueCopy = value;
-        if ((valueCopy >> (bitCount - 1)) & 1) {
+        if (valueCopy >> (bitCount - 1)) 
+        {
             valueCopy |= (0xFFFF << bitCount);
         }
         return valueCopy;

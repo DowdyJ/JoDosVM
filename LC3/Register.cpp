@@ -44,19 +44,6 @@ void Register::UpdateFlags(REGISTER regIndex)
 
 uint16_t Register::ReadMemoryAt(uint16_t address) 
 {
-    try
-    {
-        if (address > (uint16_t)(MEM_MAX))
-        {
-            throw (address);
-        }
-    }
-    catch (uint16_t address)
-    {
-        std::cout << "Attempted to read data outside of MEM_MAX. Attempted Address was: " << address << std::endl;
-        return 0;
-    }
-
     if (address == Register::MR_KBSR)
     {
         if (ExternalUtilities::check_key())
@@ -68,6 +55,10 @@ uint16_t Register::ReadMemoryAt(uint16_t address)
         {
             Register::memory[Register::MR_KBSR] = 0;
         }
+    }
+    else if (address > (MEM_MAX))
+    {
+        std::cout << "Attempted to read data outside of MEM_MAX. Attempted Address was: " << address << std::endl;
     }
     
     return Register::memory[address];
@@ -93,7 +84,7 @@ void Register::Add(const uint16_t& instruction)
     uint16_t firstRegister = (instruction >> 6) & 0x7;
     if ((instruction >> 5) & 1) // alt-add mode
     {
-        uint16_t valueToAdd = (instruction) & 0b00000000011111;
+        uint16_t valueToAdd = (instruction) & 0b11111;
         valueToAdd = ExtendSign(valueToAdd, 5);
     
         reg[destinationRegister] = reg[firstRegister] + valueToAdd;
@@ -160,12 +151,13 @@ void Register::Jmp(const uint16_t& instruction)
 void Register::Jsr(const uint16_t& instruction) 
 {
     // xxxx x xxxxxxxxxxx JSR
-    // inst m1PCOffset11
+    // inst m1 PCOffset11
     // xxxx x xx xxx xxxxxx
-    // inst m0xx reg xxxxxx
+    // inst m0   reg xxxxxx
 
     bool flagSet = (instruction >> 11) & 1;
-
+    reg[R_R7] = reg[R_PC];
+    
     if (flagSet) 
     {
         reg[R_PC] = reg[R_PC] + ExtendSign(instruction & 0b0000011111111111, 11);
@@ -185,9 +177,9 @@ void Register::Ld(const uint16_t & instruction)
     // xxxx xxx xxxxxxxxx
     // inst DR  PCOffset9
     uint16_t destinationRegister = (instruction >> 9) & 0x7;
-    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b111111111, 9);
     
-    reg[destinationRegister] = memory[reg[R_PC] + signExtendedOffset];
+    reg[destinationRegister] = Register::ReadMemoryAt(reg[R_PC] + signExtendedOffset);
 
     UpdateFlags(static_cast<REGISTER>(destinationRegister));
 }
@@ -195,12 +187,12 @@ void Register::Ld(const uint16_t & instruction)
 void Register::Ldi(const uint16_t& instruction)
 {
     // xxxx xxx xxxxxxxxx
-    // inst DR  PCOffset9
+    // inst DR  9PCOffset
 
     uint16_t destinationRegister = (instruction >> 9) & 0x7;
-    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b111111111, 9);
 
-    reg[destinationRegister] = memory[memory[reg[R_PC] + signExtendedOffset]];
+    reg[destinationRegister] = ReadMemoryAt(ReadMemoryAt(reg[R_PC] + signExtendedOffset));
 
     UpdateFlags(static_cast<REGISTER>(destinationRegister));
 }
@@ -213,9 +205,9 @@ void Register::Ldr(const uint16_t& instruction)
     uint16_t destinationRegister = (instruction >> 9) & 0x7;
     uint16_t baseRegister = (instruction >> 6) & 0x7;
 
-    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000000111111, 6);
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b111111, 6);
 
-    reg[destinationRegister] = memory[reg[baseRegister] + signExtendedOffset];
+    reg[destinationRegister] = ReadMemoryAt(reg[baseRegister] + signExtendedOffset);
 
     UpdateFlags(static_cast<REGISTER>(destinationRegister));
 }
@@ -226,7 +218,7 @@ void Register::Lea(const uint16_t& instruction)
     // inst DR  PCOffset9
 
     uint16_t destinationRegister = (instruction >> 9) & 0x7;
-    uint16_t signExtendedOffset = ExtendSign(instruction & 0b0000000111111111, 9);
+    uint16_t signExtendedOffset = ExtendSign(instruction & 0b111111111, 9);
 
     reg[destinationRegister] = reg[R_PC] + signExtendedOffset;
 
@@ -241,7 +233,7 @@ void Register::St(const uint16_t& instruction)
     uint16_t sourceRegister = (instruction >> 9) & 0x7;
     uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
 
-    memory[reg[R_PC] + signExtendedOffset] = reg[sourceRegister];
+    WriteMemoryAt(reg[R_PC] + signExtendedOffset, reg[sourceRegister]);
 
     return;
 }
@@ -254,7 +246,7 @@ void Register::Sti(const uint16_t& instruction)
     uint16_t sourceRegister = (instruction >> 9) & 0x7;
     uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
 
-    memory[memory[reg[R_PC] + signExtendedOffset]] = reg[sourceRegister];
+    WriteMemoryAt(ReadMemoryAt(reg[R_PC] + signExtendedOffset), reg[sourceRegister]);
 
     return;
 }
@@ -268,7 +260,7 @@ void Register::Str(const uint16_t& instruction)
     uint16_t baseRegister = (instruction >> 6) & 0x7;
     uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000000111111, 6);
 
-    memory[reg[baseRegister] + signExtendedOffset] = reg[sourceRegister];
+    WriteMemoryAt(reg[baseRegister] + signExtendedOffset, reg[sourceRegister]);
 
     return;
 }
@@ -280,7 +272,7 @@ void Register::Trap(const uint16_t& instruction)
     case TRAP_GETC:
     {
         char letter = std::getchar();
-        SetValueInRegister(R_R0, static_cast<uint16_t>(letter) & 0xFF);
+        SetValueInRegister(R_R0, static_cast<uint16_t>(letter));
         UpdateFlags(R_R0);
         break;
     }
@@ -296,13 +288,13 @@ void Register::Trap(const uint16_t& instruction)
         char letter = std::getchar();
         SetValueInRegister(R_R0, static_cast<uint16_t>(letter) & 0xFF);
         UpdateFlags(R_R0);
-        std::cout << letter;
+        std::cout << letter << std::flush;
         break;
     }
     case TRAP_OUT:
     {
-        char letter = ReadMemoryAt(GetValueInReg(R_R0)) && 0xFF;
-        std::cout << letter;
+        char letter = GetValueInReg(R_R0) & 0xFF;
+        std::cout << letter << std::flush;
         break;
     }
     case TRAP_PUTS:
@@ -314,17 +306,30 @@ void Register::Trap(const uint16_t& instruction)
             ++index;
         }
 
+        std::cout << std::flush;
         break;
     }
     case TRAP_PUTSP:
     {
         uint16_t index = 0;
         
-        while (char letter = ReadMemoryAt(GetValueInReg(R_R0) + index) & 0xFF << ((index % 2) * 8))
+        while (uint16_t letter = ReadMemoryAt(GetValueInReg(R_R0) + index))
         {
-            std::cout << letter;
+            char c;
+
+            if (index & 1)
+                c = letter >> 8;
+            else 
+                c = letter & 0xFF;
+            
+            if (c == 0)
+                break;
+            
+            std::cout << c;
+
             ++index;
         }
+        std::cout << std::flush;
 
         break;
     }
@@ -342,14 +347,13 @@ void Register::Br(const uint16_t& instruction)
     bool zInstructionFlagSet = (instruction >> 10) & 0x1;
     bool pInstructionFlagSet = (instruction >> 9) & 0x1;
 
-    bool nRegisterSet = reg[R_COND] & 0x1;
-    bool zRegisterSet = reg[R_COND] & 0x2;
-    bool pRegisterSet = reg[R_COND] & 0x4;
+    bool nRegisterSet = reg[R_COND] & FL_NEG;
+    bool zRegisterSet = reg[R_COND] & FL_ZRO;
+    bool pRegisterSet = reg[R_COND] & FL_POS;
 
     if ((nInstructionFlagSet && nRegisterSet) || (zInstructionFlagSet && zRegisterSet) || (pInstructionFlagSet && pRegisterSet)) 
     {
-        // May have to increment the program counter again or differently according to specification
-        reg[R_PC] = reg[R_PC] + ExtendSign(instruction & 0b0000000111111111, 9);
+        reg[R_PC] += ExtendSign(instruction & 0b111111111, 9);
     }
 }
 
@@ -360,6 +364,7 @@ void Register::SetValueInRegister(REGISTER regIndex, uint16_t value)
 
 void Register::HandleBadOpCode(const uint16_t& instruction) 
 {
+    std::cout << "Bad Op Code: " << instruction << std::endl;
     //Do something!
 }
 

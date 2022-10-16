@@ -7,5 +7,5 @@ class Utilities
 {
 public:
 	// Returns PC start
-	static uint16_t LoadFileInto(string filename, uint16_t* test, uint16_t numberToRead, bool swapEndianness);
+	static uint16_t LoadFileInto(string filename, uint16_t* test, int numberToRead, bool swapEndianness);
 };
