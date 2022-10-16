@@ -109,7 +109,7 @@ void Register::And(const uint16_t& instruction)
 
     if ((instruction >> 5) & 1) // alt-and mode
     {
-        uint16_t valueToAnd = (instruction) & 0b00000000011111;
+        uint16_t valueToAnd = (instruction) & 0b11111;
         valueToAnd = ExtendSign(valueToAnd, 5);
 
         reg[destinationRegister] = reg[firstRegister] & valueToAnd;
@@ -144,8 +144,6 @@ void Register::Jmp(const uint16_t& instruction)
 
     uint16_t regIndex = (instruction >> 6) & 0x7;
     reg[R_PC] = reg[regIndex];
-
-    return;
 }
 
 void Register::Jsr(const uint16_t& instruction) 
@@ -160,7 +158,7 @@ void Register::Jsr(const uint16_t& instruction)
     
     if (flagSet) 
     {
-        reg[R_PC] = reg[R_PC] + ExtendSign(instruction & 0b0000011111111111, 11);
+        reg[R_PC] += ExtendSign(instruction & 0b11111111111, 11);
     }
     else 
     {
@@ -168,8 +166,6 @@ void Register::Jsr(const uint16_t& instruction)
 
         reg[R_PC] = reg[registerIndex];
     }
-
-    return;
 }
 
 void Register::Ld(const uint16_t & instruction)
@@ -231,11 +227,9 @@ void Register::St(const uint16_t& instruction)
     // inst SR  PCOffset9
 
     uint16_t sourceRegister = (instruction >> 9) & 0x7;
-    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b111111111, 9);
 
     WriteMemoryAt(reg[R_PC] + signExtendedOffset, reg[sourceRegister]);
-
-    return;
 }
 
 void Register::Sti(const uint16_t& instruction)
@@ -244,11 +238,9 @@ void Register::Sti(const uint16_t& instruction)
     // inst SR  PCOffset9
 
     uint16_t sourceRegister = (instruction >> 9) & 0x7;
-    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000111111111, 9);
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b111111111, 9);
 
     WriteMemoryAt(ReadMemoryAt(reg[R_PC] + signExtendedOffset), reg[sourceRegister]);
-
-    return;
 }
 
 void Register::Str(const uint16_t& instruction)
@@ -258,15 +250,15 @@ void Register::Str(const uint16_t& instruction)
 
     uint16_t sourceRegister = (instruction >> 9) & 0x7;
     uint16_t baseRegister = (instruction >> 6) & 0x7;
-    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b0000000000111111, 6);
+    uint16_t signExtendedOffset = ExtendSign((instruction) & 0b111111, 6);
 
     WriteMemoryAt(reg[baseRegister] + signExtendedOffset, reg[sourceRegister]);
-
-    return;
 }
 
 void Register::Trap(const uint16_t& instruction) 
 {
+    reg[R_R7] = reg[R_PC];
+    
     switch (instruction & 0xFF)
     {
     case TRAP_GETC:
