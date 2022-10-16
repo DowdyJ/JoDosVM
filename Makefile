@@ -2,8 +2,8 @@ CC = g++
 CFLAGS = -g -Wall -std=c++11
 
 
-TARGET = assembler
-TARGET_LC3 = lc3
+TARGET = assembler.pls
+TARGET_LC3 = lc3.pls
 
 
 clean:
@@ -13,6 +13,10 @@ clean:
 	-rm $(TARGET_LC3)
 
 all: $(TARGET) $(TARGET_LC3)
+
+assembler: $(TARGET)
+
+lc3: $(TARGET_LC3)
 
 $(TARGET): Assembler/Source.o Assembler/Assembler.o Assembler/ConsoleLogger.o Assembler/Utilities.o
 	$(CC) $(CFLAGS) -o $(TARGET) Assembler/Source.o Assembler/Assembler.o Assembler/ConsoleLogger.o Assembler/Utilities.o

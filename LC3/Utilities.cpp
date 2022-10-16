@@ -9,6 +9,12 @@ uint16_t Utilities::LoadFileInto(string filename, uint16_t* memory, uint16_t mem
 {
 	std::ifstream input(filename, std::ios::in | std::ios::binary);
 
+	if (!input.is_open())
+	{
+		std::cout << "LOAD (did) FAILED" << std::endl;
+		return 0;
+	}
+
 	uint16_t startAddress;
 	input.read(reinterpret_cast<char*>(&startAddress), 2);
 
@@ -23,35 +29,34 @@ uint16_t Utilities::LoadFileInto(string filename, uint16_t* memory, uint16_t mem
 	
 	std::cout << "Length of file read as: " << std::to_string(lengthOfFile) << " words" << std::endl;
 
-	if (memorySize - startAddress > lengthOfFile) 
+	if (startAddress + lengthOfFile < memorySize) 
 	{
 		std::cout << "File shorter than available space. Reading " << std::to_string(lengthOfFile) << " units instead." << std::endl;
-	} else 
+	} 
+	else 
 	{
 		std::cout << "File larger than available space. Aborting..." << std::endl;
 		input.close();
 		return 0;
 	}
 
+	uint16_t buffer;
 
 	for (size_t i = 0; i < lengthOfFile; ++i)
 	{
-		input.read(reinterpret_cast<char*>(memory + startAddress), sizeof(uint16_t));
-	}
-
-	if (swapEndianness)
-	{
-		for (size_t i = 0; i < lengthOfFile; ++i)
+		input.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
+		if (swapEndianness)
 		{
-			(memory)[startAddress + i] = ((memory)[startAddress + i] << 8) | ((memory)[startAddress + i] >> 8);
+			buffer = buffer << 8 | buffer >> 8;
 		}
+		memory[startAddress + i] = buffer;
 	}
 
 	input.close();
 
 	if (!input.good())
 	{
-		std::cout << "File read with errors!" << std::endl;
+		perror("LOAD (not) OK");
 	}
 
 	std::cout << "File done being read." << std::endl;
