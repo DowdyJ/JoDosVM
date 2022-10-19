@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <regex>
 #include "Assembler.h"
 #include "ConsoleLogger.h"
 #include "Utilities.h"
@@ -15,6 +16,8 @@ using std::string;
 
 int main(int argc, char* argv[])
 {
+	bool switchEndianness = false;
+
 	if (argc < 2)
 	{
 		std::cout << "Need relative path to input file!" << std::endl;
@@ -23,11 +26,23 @@ int main(int argc, char* argv[])
 	string inputFilePath = argv[1];
 
 	std::ifstream input(inputFilePath, std::ios::in);
+	if (!input.is_open())
+	{
+		std::cout << "FIle failed to load at " + inputFilePath + ". Exiting..." << std::endl;
+		return -1;
+	}
 
 	vector<string> fileAsLines;
 	string currentLine;
+	std::regex nonBlankLinePattern("(\\w+)", std::regex_constants::ECMAScript);
 	while (std::getline(input, currentLine))
-		fileAsLines.push_back(currentLine);
+	{
+		std::smatch sm;
+		if (std::regex_search(currentLine, sm, nonBlankLinePattern))
+		{
+			fileAsLines.push_back(currentLine);
+		}
+	}
 
 	input.close();
 
@@ -36,13 +51,18 @@ int main(int argc, char* argv[])
 	for (string const& line : fileAsLines)
 		std::cout << line << '\n';
 
-	Assembler::RemoveAllTextAfterAndIncludingENDMacro(fileAsLines);
 
 	for (string& line : fileAsLines) 
 		Assembler::RemoveCommentsFromLine(line);
 
+	Assembler::RemoveAllTextAfterAndIncludingENDMacro(fileAsLines);
+	Assembler::HandleORIGMacro(fileAsLines);
+	Assembler::HandleFILLMacros(fileAsLines);
+
 	vector<vector<string>> tokenizedInput = Assembler::GetTokenizedInputStrings(fileAsLines);
-	
+	Assembler::HandleTRAPCodeMacroReplacement(tokenizedInput);
+	Assembler::HandleSTRINGZMacros(tokenizedInput);
+
 	Assembler::ResolveAndReplaceLabels(tokenizedInput);
 
 	std::cout << "\nRecieved the following parsed input: " << std::endl;
@@ -68,10 +88,9 @@ int main(int argc, char* argv[])
 		std::cout << "No errors were encountered during assembly.";
 	}
 
-	for (uint16_t& value : outputOfAssembler)
-	{
-		value = Utilities::SwitchEndianness(value);
-	}
+	if (switchEndianness)
+		for (uint16_t& value : outputOfAssembler)
+			value = Utilities::SwitchEndianness(value);
 
 
 	std::ofstream output("ASSEMBLY", std::ios::binary | std::ios::trunc);
@@ -84,10 +103,6 @@ int main(int argc, char* argv[])
 
 		std::cout << "Assembly complete." << std::endl;
 	}
-
-
-
-
 
 	return 0;
 }

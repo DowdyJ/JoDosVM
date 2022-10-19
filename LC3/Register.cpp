@@ -96,7 +96,6 @@ void Register::Add(const uint16_t& instruction)
         reg[destinationRegister] = reg[firstRegister] + reg[secondRegister];
     }
     UpdateFlags(static_cast<REGISTER>(destinationRegister));
-    return;
 }
 
 void Register::And(const uint16_t& instruction)
@@ -121,8 +120,6 @@ void Register::And(const uint16_t& instruction)
     }
 
     UpdateFlags(static_cast<REGISTER>(destinationRegister));
-    return;
-    
 }
 
 void Register::Not(const uint16_t& instruction) 
@@ -258,7 +255,7 @@ void Register::Str(const uint16_t& instruction)
 void Register::Trap(const uint16_t& instruction) 
 {
     reg[R_R7] = reg[R_PC];
-    
+
     switch (instruction & 0xFF)
     {
     case TRAP_GETC:

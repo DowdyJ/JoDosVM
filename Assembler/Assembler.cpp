@@ -74,6 +74,127 @@ void Assembler::ResolveAndReplaceLabels(vector<vector<string>>& inputTokens)
 
 }
 
+
+void Assembler::HandleORIGMacro(vector<string>& linifiedFile) 
+{
+	if (linifiedFile[0].find(".ORIG") != 0)
+	{
+		//Error! All files need to start with this.
+		return;
+	}
+
+	string valueAtIndex = linifiedFile[0];
+	size_t indexOfX = valueAtIndex.find('x');
+	string hexValue = valueAtIndex.substr(indexOfX + 1);
+
+	uint16_t valueAsInt = 0;
+
+	std::stringstream ss;
+
+	ss << std::hex << hexValue;
+	ss >> valueAsInt;
+	
+	linifiedFile[0] = "LIT " + std::to_string(valueAsInt);
+
+	return;
+}
+
+void Assembler::HandleFILLMacros(vector<string>& linifiedFile) 
+{
+	// Expects input in the form .FILL x[0-9a-f]+
+
+	for (size_t i = 0; i < linifiedFile.size(); ++i)
+	{
+		string valueAtIndex = linifiedFile[i];
+
+		if (valueAtIndex.find(".FILL") == 0)
+		{
+			size_t indexOfX = valueAtIndex.find('x');
+			string hexValue = valueAtIndex.substr(indexOfX + 1);
+			uint16_t valueAsInt = 0;
+
+			std::stringstream ss;
+
+			ss << std::hex << hexValue;
+			ss >> valueAsInt;
+
+			linifiedFile[i] = "LIT " + std::to_string(valueAsInt);
+		}
+	}
+}
+
+void Assembler::HandleTRAPCodeMacroReplacement(vector<vector<string>>& tokeninzedInput) 
+{
+	std::map<string, vector<string>> labelToTrapCode = 
+	{
+		{"GETC",  vector<string>{"TRAP", "x20"}},
+		{"OUT",   vector<string>{"TRAP", "x21"}},
+		{"PUTS",  vector<string>{"TRAP", "x22"}},
+		{"IN",    vector<string>{"TRAP", "x23"}},
+		{"PUTSP", vector<string>{"TRAP", "x24"}},
+		{"HALT",  vector<string>{"TRAP", "x25"}},
+	};
+
+	for (size_t i = 0; i < tokeninzedInput.size(); ++i)
+	{
+		vector<string> currentLine = tokeninzedInput[i];
+
+		for (size_t j = 0; j < currentLine.size(); ++j)
+		{
+			string currentToken = Utilities::ToUpperCase(currentLine[j]);
+			if (labelToTrapCode.find(currentToken) != labelToTrapCode.end())
+			{
+				//replace NAME with TRAP x##
+				vector<string> trapCodeVector = labelToTrapCode[currentToken];
+				tokeninzedInput[i].erase(tokeninzedInput[i].begin() + j, tokeninzedInput[i].end());
+				tokeninzedInput[i].insert(tokeninzedInput[i].begin() + j, trapCodeVector.begin(), trapCodeVector.end());
+			}
+		}
+	}	
+}
+
+void Assembler::HandleSTRINGZMacros(vector<vector<string>>& tokeninzedInput) 
+{
+	for (size_t i = 0; i < tokeninzedInput.size(); ++i)
+	{
+		vector<string> currentLine = tokeninzedInput[i];
+
+		for (size_t j = 0; j < currentLine.size(); ++j)
+		{
+			string currentToken = Utilities::ToUpperCase(currentLine[j]);
+			if (currentToken == ".STRINGZ")
+			{
+				if (j >= currentLine.size())
+				{
+					std::cout << "ERROR: .STRINGZ lacked it's required argument! Replacing with NOP" << std::endl;
+					tokeninzedInput[i] = vector<string> {"LIT 0"};
+					return;
+				}
+
+
+				string stringzArgument = Utilities::ConcatenateStrings(vector<string>(currentLine.begin() + j, currentLine.end()));
+				vector<vector<string>> newInstructions;
+
+				if (j > 0) // Add the label if there was one
+					newInstructions.push_back(vector<string>{currentLine[0]});	
+
+				for (size_t i = 1; i < stringzArgument.size() - 1; ++i) // Start at one and end one early removes quote marks.
+				{
+					newInstructions.push_back(vector<string> {"LIT", std::to_string(static_cast<uint16_t>(stringzArgument[i]))});
+				}
+
+				newInstructions.push_back(vector<string>{"LIT", "0"}); // Add null terminator
+				tokeninzedInput.erase(tokeninzedInput.begin() + i); // Remove original stringz macro command
+				tokeninzedInput.insert(tokeninzedInput.begin() + i, newInstructions.begin(), newInstructions.end());
+
+				i += newInstructions.size();
+			}
+		}
+	}	
+
+	return;
+}
+
 void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, vector<string>& errors) 
 {
 	for (size_t i = 0; i < inputTokens.size(); ++i)
@@ -136,41 +257,23 @@ map<string, uint16_t> Assembler::BuildLabelAddressMap(vector<vector<string>>& in
 	{
 		vector<string> lineOfTokens = inputTokens[i];
 
-		if (lineOfTokens.size() == 1)
-		{
-			string label = lineOfTokens[0];
+		string label = lineOfTokens[0];
 			
-			if (std::find(std::begin(opCodes), std::end(opCodes), label) == opCodes.end())
-			{
-				if (labelIndexPairs.find(label) == labelIndexPairs.end())
-				{
-					labelIndexPairs.insert({ label, i });
-					inputTokens[i].erase(inputTokens[i].begin());
-					i--;
-				}
-				else
-				{
-					errors.push_back("Duplicate label in input: " + lineOfTokens[0]);
-				}
-			}
-		}
-		else
+		if (std::find(opCodes.begin(), opCodes.end(), label) == opCodes.end()) // It is not an OP Code
 		{
-			//Run the same line through the loop again, but without the label attached.
-			string label = lineOfTokens[0];
-
-			if (std::find(opCodes.begin(), opCodes.end(), label) == opCodes.end())
+			if (labelIndexPairs.find(label) == labelIndexPairs.end()) // It isn't in the label map yet
 			{
-				if (labelIndexPairs.find(label) == labelIndexPairs.end())
-				{
-					labelIndexPairs.insert({ label, i });
+				labelIndexPairs.insert({ label, i });
+				if (inputTokens[i].size() > 1)
 					inputTokens[i].erase(inputTokens[i].begin());
-					i--;
-				}
 				else
-				{
-					errors.push_back("Duplicate label in input: " + lineOfTokens[0]);
-				}
+					inputTokens.erase(inputTokens.begin() + i);
+
+				--i;
+			}
+			else
+			{
+				errors.push_back("Duplicate label in input: " + lineOfTokens[0]);
 			}
 		}
 		
@@ -183,9 +286,6 @@ map<string, uint16_t> Assembler::BuildLabelAddressMap(vector<vector<string>>& in
 			std::cout << itr->first << " : " << itr->second << std::endl;
 		}
 	}
-
-
-
 
 	return labelIndexPairs;
 }
@@ -395,8 +495,20 @@ uint16_t Assembler::HandleADDConversion(const vector<string>& instruction)
 
 uint16_t Assembler::HandleLITConversion(const vector<string>& instruction) 
 {
+	// instruction should be of the format "LIT [0-9]+"
 
-	return 1;
+	string valueOfLitArgAsString = instruction[1];
+
+	try
+	{
+		uint16_t valueOfArgAsInt = std::stoi(valueOfLitArgAsString);
+		return valueOfArgAsInt;
+	}
+	catch(const std::exception& e)
+	{
+		std::cerr << e.what() << '\n';
+		return 0;
+	}
 }
 
 uint16_t Assembler::HandleANDConversion(const vector<string>& instruction)
@@ -664,7 +776,7 @@ uint16_t Assembler::HandleSTRConversion(const vector<string>& instruction)
 
 uint16_t Assembler::HandleTRAPConversion(const vector<string>& instruction)
 {
-	//Takes hex in form xFF
+	//Takes hex in form XFF
 	if (instruction.size() != 2)
 	{
 		_errors.push_back("Incorrect number of tokens for TRAP. Recieved " + std::to_string(instruction.size()) + ", expected 2");
