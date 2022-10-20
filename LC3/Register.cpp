@@ -304,17 +304,17 @@ void Register::Trap(const uint16_t& instruction)
         
         while (uint16_t letter = ReadMemoryAt(GetValueInReg(R_R0) + index))
         {
-            char c;
+            char c1, c2;
 
-            if (index & 1)
-                c = letter >> 8;
-            else 
-                c = letter & 0xFF;
+            c1 = letter >> 8; //High side
+            c2 = letter & 0xFF; // Low side
             
-            if (c == 0)
+            std::cout << c2;
+
+            if (c1 == 0)
                 break;
-            
-            std::cout << c;
+
+            std::cout << c1;
 
             ++index;
         }
