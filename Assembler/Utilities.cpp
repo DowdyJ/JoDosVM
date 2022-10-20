@@ -30,9 +30,17 @@ string Utilities::ConcatenateStrings(vector<string> lineToConcat, char delimitin
 {
 	string result;
 
-	for (string token : lineToConcat) 
+	size_t lineToConcatSize = lineToConcat.size();
+	for (size_t i = 0; i < lineToConcatSize; ++i)
 	{
-		result += (token + delimitingCharacter);
+		if (i != lineToConcatSize - 1) // Its not the last one
+		{
+			result += (lineToConcat[i] + delimitingCharacter);
+		} 
+		else 
+		{
+			result += lineToConcat[i];
+		}
 	}
 
 	return result;

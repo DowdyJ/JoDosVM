@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 {
 	if (argc < 3)
 	{
-		std::cout << "Need relative path to input file!" << std::endl;
+		std::cout << "Usage: assembler path/to/input (swapEndianness)[true/false]" << std::endl;
 		return 1;
 	}
 
@@ -108,8 +108,6 @@ int main(int argc, char* argv[])
 
 	if (output.is_open())
 	{
-		//for (const uint16_t& val : outputOfAssembler)
-		//	output << val;
 		output.write(reinterpret_cast<char*>(&outputOfAssembler[0]), outputOfAssembler.size() * sizeof(uint16_t));
 		
 		output.close();

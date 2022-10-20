@@ -164,7 +164,7 @@ void Assembler::HandleSTRINGZMacros(vector<vector<string>>& tokeninzedInput)
 			string currentToken = Utilities::ToUpperCase(currentLine[j]);
 			if (currentToken == ".STRINGZ")
 			{
-				if (j >= currentLine.size())
+				if (j + 1 > currentLine.size())
 				{
 					std::cout << "ERROR: .STRINGZ lacked it's required argument! Replacing with NOP" << std::endl;
 					tokeninzedInput[i] = vector<string> {"LIT 0"};
@@ -172,7 +172,7 @@ void Assembler::HandleSTRINGZMacros(vector<vector<string>>& tokeninzedInput)
 				}
 
 
-				string stringzArgument = Utilities::ConcatenateStrings(vector<string>(currentLine.begin() + j, currentLine.end()));
+				string stringzArgument = Utilities::ConcatenateStrings(vector<string>(currentLine.begin() + j + 1, currentLine.end()));
 				vector<vector<string>> newInstructions;
 
 				if (j > 0) // Add the label if there was one
@@ -215,7 +215,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 					{
 						uint16_t labelLineNumber = labelIndexPairs.at(label);
 						
-						inputTokens[i][1] = std::to_string(static_cast<int>(labelLineNumber) - static_cast<int>(i));
+						inputTokens[i][1] = std::to_string(static_cast<int>(labelLineNumber) - static_cast<int>(i + 1)); //Add 1 to the line number because the offsets are relative to the INCREMENTED PC.
 					}
 					else 
 					{
@@ -230,8 +230,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 					{
 						uint16_t labelLineNumber = labelIndexPairs.at(label);
 
-
-						inputTokens[i][2] = std::to_string(static_cast<int>(labelLineNumber) - static_cast<int>(i));
+						inputTokens[i][2] = std::to_string(static_cast<int>(labelLineNumber) - static_cast<int>(i + 1));
 					}
 					else 
 					{
@@ -263,12 +262,16 @@ map<string, uint16_t> Assembler::BuildLabelAddressMap(vector<vector<string>>& in
 		{
 			if (labelIndexPairs.find(label) == labelIndexPairs.end()) // It isn't in the label map yet
 			{
-				labelIndexPairs.insert({ label, i });
-				if (inputTokens[i].size() > 1)
+				if (lineOfTokens.size() > 1)
+				{
+					labelIndexPairs.insert({ label, i });
 					inputTokens[i].erase(inputTokens[i].begin());
+				}
 				else
+				{
+					labelIndexPairs.insert({ label, i });
 					inputTokens.erase(inputTokens.begin() + i);
-
+				}
 				--i;
 			}
 			else
