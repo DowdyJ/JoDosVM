@@ -277,7 +277,7 @@ void Register::Trap(const uint16_t& instruction)
         char letter = std::getchar();
         SetValueInRegister(R_R0, static_cast<uint16_t>(letter) & 0xFF);
         UpdateFlags(R_R0);
-        std::cout << letter << std::flush;
+        std::cout << std::flush;
         break;
     }
     case TRAP_OUT:

@@ -5,6 +5,8 @@ LD         R0, NEW_LINE
 OUT
 LEA        R0, PUTSP_HW
 PUTsp
+IN
+OUT
 HALT                               ; halt the program
 PUTSP_HW  .FILL    x6548
           .FILL    x6C6C
