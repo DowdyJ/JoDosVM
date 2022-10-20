@@ -68,9 +68,10 @@ int main(int argc, char* argv[])
 
 	Assembler::RemoveAllTextAfterAndIncludingENDMacro(fileAsLines);
 	Assembler::HandleORIGMacro(fileAsLines);
-	Assembler::HandleFILLMacros(fileAsLines);
 
 	vector<vector<string>> tokenizedInput = Assembler::GetTokenizedInputStrings(fileAsLines);
+	
+	Assembler::HandleFILLMacros(tokenizedInput);
 	Assembler::HandleTRAPCodeMacroReplacement(tokenizedInput);
 	Assembler::HandleSTRINGZMacros(tokenizedInput);
 

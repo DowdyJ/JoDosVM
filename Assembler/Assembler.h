@@ -25,7 +25,7 @@ public:
 
 	static void RemoveAllTextAfterAndIncludingENDMacro(vector<string>& linifiedFile);
 
-	static void HandleFILLMacros(vector<string>& linifiedFile);
+	static void HandleFILLMacros(vector<vector<string>>& tokeninzedInput);
 	static void HandleORIGMacro(vector<string>& linifiedFile);
 	static void HandleSTRINGZMacros(vector<vector<string>>& tokeninzedInput);
 

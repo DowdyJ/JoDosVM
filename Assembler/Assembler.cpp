@@ -99,26 +99,42 @@ void Assembler::HandleORIGMacro(vector<string>& linifiedFile)
 	return;
 }
 
-void Assembler::HandleFILLMacros(vector<string>& linifiedFile) 
+void Assembler::HandleFILLMacros(vector<vector<string>>& tokeninzedInput) 
 {
 	// Expects input in the form .FILL x[0-9a-f]+
 
-	for (size_t i = 0; i < linifiedFile.size(); ++i)
+	for (size_t i = 0; i < tokeninzedInput.size(); ++i)
 	{
-		string valueAtIndex = linifiedFile[i];
-
-		if (valueAtIndex.find(".FILL") == 0)
+		vector<string> currentLine = tokeninzedInput[i];
+		
+		for (size_t j = 0; j < currentLine.size(); ++j)
 		{
-			size_t indexOfX = valueAtIndex.find('x');
-			string hexValue = valueAtIndex.substr(indexOfX + 1);
-			uint16_t valueAsInt = 0;
+			if (Utilities::ToUpperCase(currentLine[j]) == ".FILL")
+			{
+				if (j + 1 >= currentLine.size())
+				{
+					std::cout << "ERROR: .FILL macro was missing required arguments. Replacing with NOP" << std::endl;
+					tokeninzedInput[i] = {"LIT", "0"};
+					return;
+				}
 
-			std::stringstream ss;
+				uint16_t valueAsInt = 0;
+				string hexValueString = currentLine[j + 1].substr(1);
 
-			ss << std::hex << hexValue;
-			ss >> valueAsInt;
+				std::stringstream ss;
 
-			linifiedFile[i] = "LIT " + std::to_string(valueAsInt);
+				ss << std::hex << hexValueString;
+				ss >> valueAsInt;
+				if (j != 0)
+				{
+					string label = currentLine[0];
+					tokeninzedInput[i] = {label, "LIT", std::to_string(valueAsInt)};
+				} 
+				else
+				{
+					tokeninzedInput[i] = {"LIT", std::to_string(valueAsInt)};
+				}
+			}
 		}
 	}
 }
