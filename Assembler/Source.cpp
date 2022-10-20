@@ -16,13 +16,24 @@ using std::string;
 
 int main(int argc, char* argv[])
 {
-	bool switchEndianness = false;
-
-	if (argc < 2)
+	if (argc < 3)
 	{
 		std::cout << "Need relative path to input file!" << std::endl;
 		return 1;
 	}
+
+	bool switchEndianness;
+
+	if (Utilities::ToUpperCase(argv[2]) == "TRUE") 
+		switchEndianness = true;
+	else if (Utilities::ToUpperCase(argv[2]) == "FALSE")
+		switchEndianness = false;
+	else
+	{
+		std::cout << "Usage: assembler path/to/input swapEndianness[true/false]" << std::endl;
+		return 1;
+	}
+
 	string inputFilePath = argv[1];
 
 	std::ifstream input(inputFilePath, std::ios::in);
@@ -97,6 +108,8 @@ int main(int argc, char* argv[])
 
 	if (output.is_open())
 	{
+		//for (const uint16_t& val : outputOfAssembler)
+		//	output << val;
 		output.write(reinterpret_cast<char*>(&outputOfAssembler[0]), outputOfAssembler.size() * sizeof(uint16_t));
 		
 		output.close();

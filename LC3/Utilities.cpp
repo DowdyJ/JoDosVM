@@ -15,12 +15,12 @@ uint16_t Utilities::LoadFileInto(string filename, uint16_t* memory, int memorySi
 		return 0;
 	}
 
-	uint16_t startAddress;
-	input.read(reinterpret_cast<char*>(&startAddress), 2);
-
 	input.seekg(0, input.end);
 	uint16_t lengthOfFile = input.tellg() / 2;
 	input.seekg(0, input.beg);
+
+	uint16_t startAddress;
+	input.read(reinterpret_cast<char*>(&startAddress), 2);
 
 	if (swapEndianness)
 		startAddress = startAddress << 8 | startAddress >> 8;
@@ -44,7 +44,7 @@ uint16_t Utilities::LoadFileInto(string filename, uint16_t* memory, int memorySi
 
 	uint16_t buffer;
 
-	for (size_t i = 0; i < lengthOfFile; ++i)
+	for (size_t i = 0; i < lengthOfFile - 1; ++i)
 	{
 		input.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
 		if (swapEndianness)
