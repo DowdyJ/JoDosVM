@@ -323,7 +323,7 @@ void Register::Trap(const uint16_t& instruction)
         break;
     }
     default:
-        std::cout << "Error in execution of trap code: " << std::to_string(instruction & 0xFF) << std::endl;
+        std::cout << "Error in execution of trap code: " << std::to_string(instruction & 0xFF) << " at line: " << std::to_string(reg[R_PC]) << ". Full instruction: " << std::to_string(instruction) << std::endl;
         break;
     }
 }

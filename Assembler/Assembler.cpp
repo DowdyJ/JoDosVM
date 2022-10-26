@@ -196,14 +196,31 @@ void Assembler::HandleSTRINGZMacros(vector<vector<string>>& tokeninzedInput)
 
 				for (size_t i = 1; i < stringzArgument.size() - 1; ++i) // Start at one and end one early removes quote marks.
 				{
-					newInstructions.push_back(vector<string> {"LIT", std::to_string(static_cast<uint16_t>(stringzArgument[i]))});
+					char c = stringzArgument[i];
+					if (c == '\\' && i + 1 < stringzArgument.size())
+					{
+						char nextChar = stringzArgument[i+1];
+						if (nextChar == 'n' || nextChar == 'N') // LF
+						{
+							newInstructions.push_back(vector<string>{"LIT", std::to_string(10)});
+							++i;
+							continue;
+						} else if (nextChar == 'e' || nextChar == 'E') // ESC
+						{
+							newInstructions.push_back(vector<string>{"LIT", std::to_string(27)});
+							++i;
+							continue;
+						}
+					} 
+					else 
+						newInstructions.push_back(vector<string> {"LIT", std::to_string(static_cast<uint16_t>(c))});
 				}
 
 				newInstructions.push_back(vector<string>{"LIT", "0"}); // Add null terminator
 				tokeninzedInput.erase(tokeninzedInput.begin() + i); // Remove original stringz macro command
 				tokeninzedInput.insert(tokeninzedInput.begin() + i, newInstructions.begin(), newInstructions.end());
 
-				i += newInstructions.size();
+				i += newInstructions.size() - 1;
 			}
 		}
 	}	
@@ -217,7 +234,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 	{
 		for (size_t j = 0; j < opCodesToCheck.size(); j++)
 		{
-			string opcode = inputTokens[i][0];
+			string opcode = Utilities::ToUpperCase(inputTokens[i][0]);
 			
 			if (opcode == opCodesToCheck[j])
 			{
@@ -225,7 +242,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 
 				if (opcode[0] == 'B' || opcode[0] == 'J') //BR(nzp) and JSR
 				{
-					label = inputTokens[i][1];
+					label = Utilities::ToUpperCase(inputTokens[i][1]);
 
 					if (labelIndexPairs.find(label) != labelIndexPairs.end())
 					{
@@ -235,12 +252,13 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 					}
 					else 
 					{
-						errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i));
+						if (label[0] != '#' && label[0] != 'x' && label[0] != 'X')
+							errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i) + ". Full line is as follows: " + Utilities::ConcatenateStrings(inputTokens[i]));
 					}
 				}
 				else 
 				{
-					label = inputTokens[i][2];
+					label = Utilities::ToUpperCase(inputTokens[i][2]);
 
 					if (labelIndexPairs.find(label) != labelIndexPairs.end())
 					{
@@ -250,7 +268,8 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 					}
 					else 
 					{
-						errors.push_back("Unregistered label: " + label + " used in line " + std::to_string(i));
+						if (label[0] != '#' && label[0] != 'x' && label[0] != 'X')
+							errors.push_back("Unregistered label: " + label + " used in line " + std::to_string(i));
 					}
 				}
 
@@ -271,8 +290,8 @@ map<string, uint16_t> Assembler::BuildLabelAddressMap(vector<vector<string>>& in
 	for (size_t i = 0; i < inputTokens.size(); ++i)
 	{
 		vector<string> lineOfTokens = inputTokens[i];
-
-		string label = lineOfTokens[0];
+		
+		string label = Utilities::ToUpperCase(lineOfTokens[0]);
 			
 		if (std::find(opCodes.begin(), opCodes.end(), label) == opCodes.end()) // It is not an OP Code
 		{
@@ -292,17 +311,19 @@ map<string, uint16_t> Assembler::BuildLabelAddressMap(vector<vector<string>>& in
 			}
 			else
 			{
-				errors.push_back("Duplicate label in input: " + lineOfTokens[0]);
+				errors.push_back("Duplicate label in input: " + label);
 			}
 		}
 		
 	}
 
+	std::cout << "-----------------------------" << std::endl;
+	std::cout << "Found the following labels: " << std::endl;
 	if (labelIndexPairs.size() > 0)
 	{
 		for (auto itr = labelIndexPairs.begin(); itr != labelIndexPairs.end(); ++itr)
 		{
-			std::cout << itr->first << " : " << itr->second << std::endl;
+			std::cout << itr->first << " line " << itr->second << std::endl;
 		}
 	}
 
@@ -323,14 +344,14 @@ vector<vector<string>> Assembler::GetTokenizedInputStrings(const vector<string>&
 
 		for (size_t characterIndex = 0; characterIndex < currentLineOfInput.size(); ++characterIndex)
 		{
-			if (currentLineOfInput[characterIndex] == ' ' || currentLineOfInput[characterIndex] == ',')
+			if (currentLineOfInput[characterIndex] == ' ' || currentLineOfInput[characterIndex] == ',' || currentLineOfInput[characterIndex] == '\t')
 				continue;
 
 			string currentToken = "";
 
 
 			for (;
-				characterIndex < currentLineOfInput.size() && currentLineOfInput[characterIndex] != ' ' && currentLineOfInput[characterIndex] != ',';
+				characterIndex < currentLineOfInput.size() && currentLineOfInput[characterIndex] != ' ' && currentLineOfInput[characterIndex] != ',' && currentLineOfInput[characterIndex] != '\t';
 				++characterIndex)
 			{
 				currentToken += currentLineOfInput[characterIndex];
@@ -398,85 +419,172 @@ bool Assembler::IsADecimalNumber(const string& token)
 	return false;
 }
 
-uint16_t Assembler::Get5BitImm5FromDecimal(const string& token)
+bool Assembler::IsAHexNumber(const string& token)
 {
-	int imm5Value = ConvertToDecimal(token, _errors);
+	if (token[0] == 'x' || token[0] == 'X')
+		return true;
+	
+	return false;
+}
 
-	if (imm5Value > 15 || imm5Value < -16)
+uint16_t Assembler::Get5BitImm5(const string& token)
+{
+	uint16_t imm5Value;
+
+	if (IsADecimalNumber(token))
+		imm5Value = static_cast<uint16_t>(ConvertToDecimal(token, _errors));
+	else if (IsAHexNumber(token))
+		imm5Value = ConvertFromHexToDec(token);
+	else
+		_errors.push_back("Input for Get5BitImm5() was not a valid format. Recieved: " + token);
+
+
+	imm5Value &= 0x1f;
+	
+	if (imm5Value > 31)
 	{
-		_errors.push_back("Value for imm5 was out of range of allowed values. Value was: " + imm5Value);
+		_errors.push_back("Value for imm5 was out of range of allowed values. Value was: " + std::to_string(imm5Value));
 	}
 
-	return static_cast<uint16_t>(imm5Value) & 0x1f;
+	return imm5Value;
 
 }
 
 uint16_t Assembler::Get6BitOffsetFromDecimal(const string& token)
 {
-	int imm6Value = ConvertToDecimal(token, _errors);
+	uint16_t imm6Value = static_cast<uint16_t>(ConvertToDecimal(token, _errors));
 
-	if (imm6Value > 31 || imm6Value < -32)
+	imm6Value &= 0x3f;
+
+	if (imm6Value > 63)
 	{
-		_errors.push_back("Value for imm6 was out of range of allowed values. Value was: " + imm6Value);
+		_errors.push_back("Value for imm6 was out of range of allowed values. Value was: " + std::to_string(imm6Value));
 	}
 
-	return static_cast<uint16_t>(imm6Value) & 0x3f;
+	return imm6Value;
 
 }
 
 uint16_t Assembler::Get9BitPCOffsetFromPureDecimal(const string& token) 
 {
-	int rawOffset = std::stoi(token);
+	string cleanedToken;
+	if (token[0] =='#')
+		cleanedToken = token.substr(1);
+	else
+		cleanedToken = token;
 
-	if (rawOffset < -256 || rawOffset > 255)
+	uint16_t rawOffset; 
+
+	try 
 	{
-		_errors.push_back("pcOffset9 was out of range of allowed values. Value was: " + rawOffset);
+		rawOffset = static_cast<uint16_t>(std::stoi(cleanedToken));
+	}
+	catch (const std::invalid_argument& e)
+	{
+		std::cout << "Exception in Get9BitPCOffset on token: " << token << ". Tried to convert to int." << std::endl;
+		std::cout << "Full details: " << e.what() << std::endl;
+	}
+	
+	rawOffset &= 0x1ff;
+
+	if (rawOffset > 511)
+	{
+		_errors.push_back("pcOffset9 was out of range of allowed values. Value was: " + std::to_string(rawOffset));
 	}
 
-	return static_cast<uint16_t>(rawOffset) & 0x1ff;
+	return rawOffset;
 	
+}
+
+
+uint16_t Assembler::ConvertFromHexToDec(const string& token) 
+{
+	string hexValueString = token.substr(1);
+	uint16_t decimalVal = 0;
+	std::istringstream(hexValueString) >> std::hex >> decimalVal >> std::dec;
+
+	return decimalVal;
 }
 
 uint16_t Assembler::Get11BitPCOffsetFromPureDecimal(const string& token)
 {
-	int rawOffset = std::stoi(token);
-
-	if (rawOffset < -1024 || rawOffset > 1023)
+	uint16_t rawOffset;
+	try 
 	{
-		_errors.push_back("pcOffset11 was out of range of allowed values. Value was: " + rawOffset);
+		if (token[0] =='#')
+			rawOffset = static_cast<uint16_t>(std::stoi(token.substr(1)));
+		else if (token[0] == 'x' || token[0] == 'X')
+			rawOffset = Assembler::ConvertFromHexToDec(token);
+		else
+			rawOffset = static_cast<uint16_t>(std::stoi(token));
+
+		rawOffset &= 0x7FF;
+
+		if (rawOffset > 2047)
+		{
+			_errors.push_back("pcOffset11 was out of range of allowed values. Value was: " + std::to_string(rawOffset));
+		}
+	}
+	catch (const std::invalid_argument& e)
+	{
+		std::cout << "Exception in Get11BitPCOffset on token: " << token << ". Tried to convert to int." << std::endl;
+		std::cout << "Full details: " << e.what() << std::endl;
 	}
 
-	return static_cast<uint16_t>(rawOffset) & 0x7ff;
+	return rawOffset;
 
 }
 
 int Assembler::ConvertToDecimal(const string& token, vector<string>& errors)
 {
-	if (token.find('#') != string::npos)
+	if (token[0] == '#')
 	{
 		if (token.size() < 2)
 		{
 			errors.push_back("ConvertToDecimal failed on token " + token + " Reason: Too short");
 			return 0;
 		}
+		int val;
+		try
+		{
+			val = std::stoi(token.substr(1));
+		}
+		catch(const std::invalid_argument& e)
+		{
+			std::cout << "Exception in ConvertToDecimal on token: " << token << ". Tried to convert to int." << std::endl;
+			std::cerr << e.what() << '\n';
+		}
 
-		return static_cast<int>(std::stoi(token.substr(1)));
+		return val;
+	} 
+	else if (token[0] == 'X' || token[0] == 'x')
+	{
+		return Assembler::ConvertFromHexToDec(token);
 	}
 	else 
 	{
-		errors.push_back("ConvertToDecimal failed on token " + token + " Reason: did not start with # character");
+		errors.push_back("ConvertToDecimal failed on token " + token + " Reason: did not start with '#' or 'x' character");
 		return 0;
 	}
 }
 
 uint16_t Assembler::ConvertRegisterStringsTo3BitAddress(const string& registerName, vector<string>& errors)
 {
-	if (registerName.size() != 2 || (registerName[1] < 48 || registerName[1] > 57))
+	unsigned char numberAsChar;
+
+	if (registerName[0] == 'x' || registerName[0] == 'X')
+	{
+		numberAsChar = static_cast<char>(Assembler::ConvertFromHexToDec(registerName));
+	}
+	else if (registerName.size() != 2 || (registerName[1] < 48 || registerName[1] > 57))
 	{
 		errors.push_back("Invalid register name: " + registerName + " was used in ConvertRegisterStringsTo3BitAddress.");
 		return 0;
+	} else 
+	{
+		numberAsChar = registerName[1] - 48;
 	}
-	unsigned char numberAsChar = registerName[1] - 48;
+
 	uint16_t registerIndex = static_cast<uint16_t>(numberAsChar);
 
 	return registerIndex;
@@ -502,7 +610,7 @@ uint16_t Assembler::HandleADDConversion(const vector<string>& instruction)
 	if (IsADecimalNumber(instruction[3]))
 	{
 		mode = 0x20;
-		imm5 = Get5BitImm5FromDecimal(instruction[3]);
+		imm5 = Get5BitImm5(instruction[3]);
 	}
 	else 
 	{
@@ -545,10 +653,10 @@ uint16_t Assembler::HandleANDConversion(const vector<string>& instruction)
 	uint16_t sr2 = 0;
 	uint16_t imm5 = 0;
 
-	if (IsADecimalNumber(instruction[3]))
+	if (IsADecimalNumber(instruction[3]) || IsAHexNumber(instruction[3]))
 	{
 		mode = 0x20;
-		imm5 = Get5BitImm5FromDecimal(instruction[3]);
+		imm5 = Get5BitImm5(instruction[3]);
 	}
 	else
 	{
@@ -585,8 +693,18 @@ uint16_t Assembler::HandleBRConversion(const vector<string>& instruction)
 	}
 
 	uint16_t baseInstruction = 0b0000000000000000;
+	
+	uint16_t pcOffset9;
 
-	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[1]);
+	if (instruction[1][0] == '#' || instruction[1][0] == 'x' || instruction[1][0] == 'X')
+	{
+		pcOffset9 = static_cast<uint16_t>(Assembler::ConvertToDecimal(instruction[1], Assembler::_errors));
+	}
+	else
+	{
+		pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[1]);
+	}
+
 
 	uint16_t flags = 0;
 

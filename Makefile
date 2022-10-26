@@ -6,12 +6,6 @@ TARGET = assembler.pls
 TARGET_LC3 = lc3.pls
 
 
-clean:
-	-rm Assembler/*.o 
-	-rm LC3/*.o
-	-rm $(TARGET)
-	-rm $(TARGET_LC3)
-
 all: $(TARGET) $(TARGET_LC3)
 
 assembler: $(TARGET)
@@ -48,3 +42,9 @@ LC3/Register.o: LC3/Register.cpp LC3/Register.h LC3/ExternalUtilities.h
 
 LC3/ExternalUtilities.o: LC3/ExternalUtilities.cpp LC3/ExternalUtilities.h
 	$(CC) $(CFLAGS) -o LC3/ExternalUtilities.o -c LC3/ExternalUtilities.cpp
+
+clean:
+	-rm Assembler/*.o 
+	-rm LC3/*.o
+	-rm $(TARGET)
+	-rm $(TARGET_LC3)
