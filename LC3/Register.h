@@ -76,8 +76,6 @@ public:
 
     static void ProcessProgram();
 
-    #pragma region OPCODE DEFINITIONS
-
     static void Add(const uint16_t& instruction);
 
     static void And(const uint16_t& instruction);
@@ -105,8 +103,6 @@ public:
     static void Str(const uint16_t& instruction);
     
     static void Trap(const uint16_t& instruction);
-
-    #pragma endregion
 
     static void HandleBadOpCode(const uint16_t& instruction);
 

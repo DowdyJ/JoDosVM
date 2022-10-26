@@ -119,12 +119,15 @@ void Assembler::HandleFILLMacros(vector<vector<string>>& tokeninzedInput)
 				}
 
 				uint16_t valueAsInt = 0;
-				string hexValueString = currentLine[j + 1].substr(1);
-
-				std::stringstream ss;
-
-				ss << std::hex << hexValueString;
-				ss >> valueAsInt;
+				string fillArgumentString = currentLine[j + 1];
+				
+				if (IsAHexNumber(fillArgumentString))
+					valueAsInt = ConvertFromHexToDec(fillArgumentString);
+				else if (IsADecimalNumber(fillArgumentString))
+					valueAsInt = ConvertToDecimal(fillArgumentString, _errors);
+				else
+					_errors.push_back("Encountered unexpected token for FILL macro: " + fillArgumentString);
+				
 				if (j != 0)
 				{
 					string label = currentLine[0];
@@ -205,11 +208,16 @@ void Assembler::HandleSTRINGZMacros(vector<vector<string>>& tokeninzedInput)
 							newInstructions.push_back(vector<string>{"LIT", std::to_string(10)});
 							++i;
 							continue;
-						} else if (nextChar == 'e' || nextChar == 'E') // ESC
+						} 
+						else if (nextChar == 'e' || nextChar == 'E') // ESC
 						{
 							newInstructions.push_back(vector<string>{"LIT", std::to_string(27)});
 							++i;
 							continue;
+						}
+						else // just a loose backslash or unhandled escape sequence
+						{
+							newInstructions.push_back(vector<string> {"LIT", std::to_string(static_cast<uint16_t>(c))});
 						}
 					} 
 					else 
@@ -342,12 +350,30 @@ vector<vector<string>> Assembler::GetTokenizedInputStrings(const vector<string>&
 		string currentLineOfInput = inputString[lineIndex];
 		vector<string> tokenizedLine = {};
 
+		bool isStringZArgumentToken = false;
+
 		for (size_t characterIndex = 0; characterIndex < currentLineOfInput.size(); ++characterIndex)
-		{
+		{	
 			if (currentLineOfInput[characterIndex] == ' ' || currentLineOfInput[characterIndex] == ',' || currentLineOfInput[characterIndex] == '\t')
 				continue;
 
 			string currentToken = "";
+
+			if (isStringZArgumentToken) 
+			{
+				size_t closingQuoteIndex = currentLineOfInput.find_last_of('"');
+
+				if (closingQuoteIndex == characterIndex)
+					_errors.push_back("Ending quote not found for STRINGZ argument. Undesired behavior may occur.");
+
+				currentToken = currentLineOfInput.substr(characterIndex, closingQuoteIndex - characterIndex + 1);
+				
+				tokenizedLine.push_back(currentToken);
+				
+				characterIndex += currentToken.size();
+				isStringZArgumentToken = false;
+				continue;
+			}
 
 
 			for (;
@@ -356,6 +382,9 @@ vector<vector<string>> Assembler::GetTokenizedInputStrings(const vector<string>&
 			{
 				currentToken += currentLineOfInput[characterIndex];
 			}
+
+			if (Utilities::ToUpperCase(currentToken) == ".STRINGZ")
+				isStringZArgumentToken = true;
 
 			tokenizedLine.push_back(currentToken);
 		}
@@ -369,6 +398,26 @@ vector<vector<string>> Assembler::GetTokenizedInputStrings(const vector<string>&
 void Assembler::RemoveCommentsFromLine(string& inputLine)
 {
 	size_t indexOfSemicolon = inputLine.find(';');
+
+	if (indexOfSemicolon == std::string::npos)
+	return;
+
+	for (size_t i = 0; i < indexOfSemicolon; ++i)
+	{
+		char currentChar = inputLine[indexOfSemicolon - i];
+		if (currentChar == ' ')
+			break;
+		else if (currentChar == '\\' && 
+		(inputLine[indexOfSemicolon - i + 1] == 'e' || inputLine[indexOfSemicolon - i + 1] == 'E'))
+		{
+			indexOfSemicolon = inputLine.find(';', indexOfSemicolon + 1);
+			
+			if (indexOfSemicolon == std::string::npos)
+				return;
+
+			i = 0;
+		}
+	}
 	inputLine = inputLine.substr(0, indexOfSemicolon);
 	return;
 }

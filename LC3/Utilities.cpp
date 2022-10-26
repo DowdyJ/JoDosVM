@@ -44,7 +44,7 @@ uint16_t Utilities::LoadFileInto(string filename, uint16_t* memory, int memorySi
 
 	uint16_t buffer;
 
-	for (size_t i = 0; i < lengthOfFile - 1; ++i)
+	for (uint16_t i = 0; i < lengthOfFile - 1; ++i)
 	{
 		input.read(reinterpret_cast<char*>(&buffer), sizeof(buffer));
 		if (swapEndianness)

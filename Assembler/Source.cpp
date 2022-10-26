@@ -79,6 +79,16 @@ int main(int argc, char* argv[])
 
 	vector<vector<string>> tokenizedInput = Assembler::GetTokenizedInputStrings(fileAsLines);
 	
+	std::cout << "\n------------------------------\nParsed the following tokenized output: \n" << std::endl;
+
+	for (vector<string> const& lineOfTokens : tokenizedInput)
+	{
+		for (string const& token : lineOfTokens)
+			std::cout << token << " ";
+		
+		std::cout << std::endl;
+	}
+
 	Assembler::HandleFILLMacros(tokenizedInput);
 	Assembler::HandleTRAPCodeMacroReplacement(tokenizedInput);
 	Assembler::HandleSTRINGZMacros(tokenizedInput);
