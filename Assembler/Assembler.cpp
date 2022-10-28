@@ -120,11 +120,9 @@ void Assembler::HandleFILLMacros(vector<vector<string>>& tokeninzedInput)
 
 				uint16_t valueAsInt = 0;
 				string fillArgumentString = currentLine[j + 1];
-				
-				if (IsAHexNumber(fillArgumentString))
-					valueAsInt = ConvertFromHexToDec(fillArgumentString);
-				else if (IsADecimalNumber(fillArgumentString))
-					valueAsInt = ConvertToDecimal(fillArgumentString, _errors);
+
+				if (IsANumberString(fillArgumentString))
+					valueAsInt = ConvertStringIfNumber(fillArgumentString);
 				else
 					_errors.push_back("Encountered unexpected token for FILL macro: " + fillArgumentString);
 				
@@ -460,6 +458,56 @@ void Assembler::LogErrors(Logger& logger)
 	logger.Log(_errors);
 }
 
+bool Assembler::IsANumberString(const string& token) 
+{
+	if (IsANumberLiteral(token) || IsAHexNumber(token) || IsADecimalNumber(token))
+		return true;
+
+	return false;
+}
+
+uint16_t Assembler::ConvertStringIfNumber(const string& token) 
+{
+	try
+	{
+		if (IsANumberLiteral(token))
+		{
+			return static_cast<uint16_t>(std::stoi(token));
+		} 
+		else if (IsAHexNumber(token)) 
+		{
+			return ConvertFromHexToDec(token);
+		}
+		else if (IsADecimalNumber(token))
+		{
+			return ConvertToDecimal(token);
+		}
+		else 
+		{
+			_errors.push_back("Tried to convert the token: " + token + " to integer but format was not recognized.");
+		}
+
+	}
+	catch(const std::invalid_argument& e)
+	{
+		std::cout << "Exception in ConvertStringIfNumber on token: " << token << ". Tried to convert to int." << std::endl;
+		std::cerr << e.what() << '\n';
+	}
+	
+	
+}
+
+bool Assembler::IsANumberLiteral(const string& token) 
+{
+	for (char const& c : token)
+	{
+		if ((c < 48 || c > 57) && c != 0) // Not ASCII numeral or null terminator
+			return false;
+	}
+
+	return true;
+}
+
 bool Assembler::IsADecimalNumber(const string& token)
 {
 	if (token[0] == '#')
@@ -480,66 +528,44 @@ uint16_t Assembler::Get5BitImm5(const string& token)
 {
 	uint16_t imm5Value;
 
-	if (IsADecimalNumber(token))
-		imm5Value = static_cast<uint16_t>(ConvertToDecimal(token, _errors));
-	else if (IsAHexNumber(token))
-		imm5Value = ConvertFromHexToDec(token);
+	if (IsANumberString(token))
+		imm5Value = ConvertStringIfNumber(token);
 	else
 		_errors.push_back("Input for Get5BitImm5() was not a valid format. Recieved: " + token);
 
-
 	imm5Value &= 0x1f;
-	
-	if (imm5Value > 31)
-	{
-		_errors.push_back("Value for imm5 was out of range of allowed values. Value was: " + std::to_string(imm5Value));
-	}
 
 	return imm5Value;
 
 }
 
-uint16_t Assembler::Get6BitOffsetFromDecimal(const string& token)
+uint16_t Assembler::Get6BitOffset(const string& token)
 {
-	uint16_t imm6Value = static_cast<uint16_t>(ConvertToDecimal(token, _errors));
+	uint16_t imm6Value;
+
+	if (IsANumberString(token))
+		imm6Value = ConvertStringIfNumber(token);
+	else
+		_errors.push_back("Input for Get6BitOffset() was not a valid format. Recieved: " + token);
+
 
 	imm6Value &= 0x3f;
-
-	if (imm6Value > 63)
-	{
-		_errors.push_back("Value for imm6 was out of range of allowed values. Value was: " + std::to_string(imm6Value));
-	}
 
 	return imm6Value;
 
 }
 
-uint16_t Assembler::Get9BitPCOffsetFromPureDecimal(const string& token) 
+uint16_t Assembler::Get9BitOffset(const string& token) 
 {
-	string cleanedToken;
-	if (token[0] =='#')
-		cleanedToken = token.substr(1);
-	else
-		cleanedToken = token;
-
 	uint16_t rawOffset; 
 
-	try 
-	{
-		rawOffset = static_cast<uint16_t>(std::stoi(cleanedToken));
-	}
-	catch (const std::invalid_argument& e)
-	{
-		std::cout << "Exception in Get9BitPCOffset on token: " << token << ". Tried to convert to int." << std::endl;
-		std::cout << "Full details: " << e.what() << std::endl;
-	}
+	if (IsANumberString(token))
+		rawOffset = ConvertStringIfNumber(token);
+	else
+		_errors.push_back("Input for Get9BitOffset() was not a valid format. Recieved: " + token);
+
 	
 	rawOffset &= 0x1ff;
-
-	if (rawOffset > 511)
-	{
-		_errors.push_back("pcOffset9 was out of range of allowed values. Value was: " + std::to_string(rawOffset));
-	}
 
 	return rawOffset;
 	
@@ -555,64 +581,36 @@ uint16_t Assembler::ConvertFromHexToDec(const string& token)
 	return decimalVal;
 }
 
-uint16_t Assembler::Get11BitPCOffsetFromPureDecimal(const string& token)
+uint16_t Assembler::Get11BitOffset(const string& token)
 {
 	uint16_t rawOffset;
-	try 
-	{
-		if (token[0] =='#')
-			rawOffset = static_cast<uint16_t>(std::stoi(token.substr(1)));
-		else if (token[0] == 'x' || token[0] == 'X')
-			rawOffset = Assembler::ConvertFromHexToDec(token);
-		else
-			rawOffset = static_cast<uint16_t>(std::stoi(token));
 
-		rawOffset &= 0x7FF;
+	if (IsANumberString(token))
+		rawOffset = ConvertStringIfNumber(token);
+	else
+		_errors.push_back("Input for Get11BitOffset() was not a valid format. Recieved: " + token);
 
-		if (rawOffset > 2047)
-		{
-			_errors.push_back("pcOffset11 was out of range of allowed values. Value was: " + std::to_string(rawOffset));
-		}
-	}
-	catch (const std::invalid_argument& e)
-	{
-		std::cout << "Exception in Get11BitPCOffset on token: " << token << ". Tried to convert to int." << std::endl;
-		std::cout << "Full details: " << e.what() << std::endl;
-	}
+	rawOffset &= 0x7FF;
 
 	return rawOffset;
 
 }
 
-int Assembler::ConvertToDecimal(const string& token, vector<string>& errors)
+uint16_t Assembler::ConvertToDecimal(const string& token)
 {
 	if (token[0] == '#')
 	{
 		if (token.size() < 2)
 		{
-			errors.push_back("ConvertToDecimal failed on token " + token + " Reason: Too short");
+			_errors.push_back("ConvertToDecimal failed on token " + token + " Reason: Too short");
 			return 0;
 		}
-		int val;
-		try
-		{
-			val = std::stoi(token.substr(1));
-		}
-		catch(const std::invalid_argument& e)
-		{
-			std::cout << "Exception in ConvertToDecimal on token: " << token << ". Tried to convert to int." << std::endl;
-			std::cerr << e.what() << '\n';
-		}
-
-		return val;
+		
+		return static_cast<uint16_t>(std::stoi(token.substr(1)));
 	} 
-	else if (token[0] == 'X' || token[0] == 'x')
-	{
-		return Assembler::ConvertFromHexToDec(token);
-	}
 	else 
 	{
-		errors.push_back("ConvertToDecimal failed on token " + token + " Reason: did not start with '#' or 'x' character");
+		_errors.push_back("ConvertToDecimal failed on token " + token + " Reason: did not start with '#' character");
 		return 0;
 	}
 }
@@ -672,19 +670,15 @@ uint16_t Assembler::HandleADDConversion(const vector<string>& instruction)
 uint16_t Assembler::HandleLITConversion(const vector<string>& instruction) 
 {
 	// instruction should be of the format "LIT [0-9]+"
-
 	string valueOfLitArgAsString = instruction[1];
+	uint16_t valueOfArgAsInt;
 
-	try
-	{
-		uint16_t valueOfArgAsInt = std::stoi(valueOfLitArgAsString);
-		return valueOfArgAsInt;
-	}
-	catch(const std::exception& e)
-	{
-		std::cerr << e.what() << '\n';
-		return 0;
-	}
+	if (IsANumberString(valueOfLitArgAsString))
+		valueOfArgAsInt = ConvertStringIfNumber(valueOfLitArgAsString);
+	else 
+		_errors.push_back("Value for LIT was not a number. Recieved: " + valueOfLitArgAsString);
+	
+	return valueOfArgAsInt;
 }
 
 uint16_t Assembler::HandleANDConversion(const vector<string>& instruction)
@@ -702,7 +696,7 @@ uint16_t Assembler::HandleANDConversion(const vector<string>& instruction)
 	uint16_t sr2 = 0;
 	uint16_t imm5 = 0;
 
-	if (IsADecimalNumber(instruction[3]) || IsAHexNumber(instruction[3]))
+	if (IsANumberString(instruction[3]))
 	{
 		mode = 0x20;
 		imm5 = Get5BitImm5(instruction[3]);
@@ -745,15 +739,7 @@ uint16_t Assembler::HandleBRConversion(const vector<string>& instruction)
 	
 	uint16_t pcOffset9;
 
-	if (instruction[1][0] == '#' || instruction[1][0] == 'x' || instruction[1][0] == 'X')
-	{
-		pcOffset9 = static_cast<uint16_t>(Assembler::ConvertToDecimal(instruction[1], Assembler::_errors));
-	}
-	else
-	{
-		pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[1]);
-	}
-
+	pcOffset9 = Get9BitOffset(instruction[1]);
 
 	uint16_t flags = 0;
 
@@ -833,7 +819,7 @@ uint16_t Assembler::HandleJSRConversion(const vector<string>& instruction)
 	else //JSR 
 	{
 		flag = 0x800;
-		pcOffset11 = Get11BitPCOffsetFromPureDecimal(instruction[1]);
+		pcOffset11 = Get11BitOffset(instruction[1]);
 	}
 
 	return baseInstruction | flag | baseR | pcOffset11;
@@ -851,7 +837,7 @@ uint16_t Assembler::HandleLDConversion(const vector<string>& instruction)
 		return 0;
 
 	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
-	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+	uint16_t pcOffset9 = Get9BitOffset(instruction[2]);
 
 	return baseInstruction | dr | pcOffset9;
 }
@@ -868,7 +854,7 @@ uint16_t Assembler::HandleLDIConversion(const vector<string>& instruction)
 		return 0;
 
 	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
-	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+	uint16_t pcOffset9 = Get9BitOffset(instruction[2]);
 
 	return baseInstruction | dr | pcOffset9;
 }
@@ -886,7 +872,7 @@ uint16_t Assembler::HandleLDRConversion(const vector<string>& instruction)
 
 	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
 	uint16_t baseR = ConvertRegisterStringsTo3BitAddress(instruction[2], _errors) << 6;
-	uint16_t offset6 = Get6BitOffsetFromDecimal(instruction[3]);
+	uint16_t offset6 = Get6BitOffset(instruction[3]);
 
 	return baseInstruction | dr | baseR | offset6;
 }
@@ -903,7 +889,7 @@ uint16_t Assembler::HandleLEAConversion(const vector<string>& instruction)
 		return 0;
 
 	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
-	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+	uint16_t pcOffset9 = Get9BitOffset(instruction[2]);
 
 	return baseInstruction | dr | pcOffset9;
 }
@@ -920,7 +906,7 @@ uint16_t Assembler::HandleSTConversion(const vector<string>& instruction)
 		return 0;
 
 	uint16_t sr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
-	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+	uint16_t pcOffset9 = Get9BitOffset(instruction[2]);
 
 	return baseInstruction | sr | pcOffset9;
 }
@@ -937,7 +923,7 @@ uint16_t Assembler::HandleSTIConversion(const vector<string>& instruction)
 		return 0;
 
 	uint16_t sr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
-	uint16_t pcOffset9 = Get9BitPCOffsetFromPureDecimal(instruction[2]);
+	uint16_t pcOffset9 = Get9BitOffset(instruction[2]);
 
 	return baseInstruction | sr | pcOffset9;
 }
@@ -955,7 +941,7 @@ uint16_t Assembler::HandleSTRConversion(const vector<string>& instruction)
 
 	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
 	uint16_t baseR = ConvertRegisterStringsTo3BitAddress(instruction[2], _errors) << 6;
-	uint16_t offset6 = Get6BitOffsetFromDecimal(instruction[3]);
+	uint16_t offset6 = Get6BitOffset(instruction[3]);
 
 	return baseInstruction | dr | baseR | offset6;
 }

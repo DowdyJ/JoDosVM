@@ -46,14 +46,17 @@ private:
 	static void ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, vector<string>& errors);
 	//static map<string, uint16_t> labelIndexPairs;
 
+	static uint16_t ConvertStringIfNumber(const string& token);
+	static bool IsANumberString(const string& token);
+	static bool IsANumberLiteral(const string& token);
 	static bool IsADecimalNumber(const string& token);
     static bool IsAHexNumber(const string& token);
 	static uint16_t Get5BitImm5(const string& token);
 	//"pure" decimals are literal numbers e.g. 5, 7, 12. They are from converted labels. Other decimals are in assembly format e.g. #7, #8
-	static uint16_t Get9BitPCOffsetFromPureDecimal(const string& token);
-	static uint16_t Get11BitPCOffsetFromPureDecimal(const string& token);
-	static uint16_t Get6BitOffsetFromDecimal(const string& token);
-	static int ConvertToDecimal(const string& token, vector<string>& errors);
+	static uint16_t Get9BitOffset(const string& token);
+	static uint16_t Get11BitOffset(const string& token);
+	static uint16_t Get6BitOffset(const string& token);
+	static uint16_t ConvertToDecimal(const string& token);
 	static uint16_t ConvertRegisterStringsTo3BitAddress(const string& registerName, vector<string>& errors);
 	static uint16_t ConvertFromHexToDec(const string& token);
 
