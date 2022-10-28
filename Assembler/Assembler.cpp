@@ -420,7 +420,7 @@ void Assembler::RemoveCommentsFromLine(string& inputLine)
 	return;
 }
 
-void Assembler::RemoveAllTextAfterAndIncludingENDMacro(vector<string>& linifiedFile)
+void Assembler::HandleENDMacro(vector<string>& linifiedFile)
 {
 	for (size_t i = 0; i < linifiedFile.size(); ++i)
 	{
@@ -434,15 +434,6 @@ void Assembler::RemoveAllTextAfterAndIncludingENDMacro(vector<string>& linifiedF
 	}
 
 	return;
-}
-
-void Assembler::RemoveExcessWhiteSpaceFromLine(string& inputLine)
-{
-}
-
-void Assembler::AddError(const string& errorMessage)
-{
-	_errors.push_back(errorMessage);
 }
 
 bool Assembler::AreErrors() 
@@ -494,14 +485,14 @@ uint16_t Assembler::ConvertStringIfNumber(const string& token)
 		std::cerr << e.what() << '\n';
 	}
 	
-	
+	return 0;
 }
 
 bool Assembler::IsANumberLiteral(const string& token) 
 {
 	for (char const& c : token)
 	{
-		if ((c < 48 || c > 57) && c != 0) // Not ASCII numeral or null terminator
+		if ((c < 48 || c > 57) && c != 0 && c != 45) // Not ASCII numeral, '-', or null terminator
 			return false;
 	}
 

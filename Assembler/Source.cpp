@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 		std::cout << line << '\n';
 
 
-	Assembler::RemoveAllTextAfterAndIncludingENDMacro(fileAsLines);
+	Assembler::HandleENDMacro(fileAsLines);
 	Assembler::HandleORIGMacro(fileAsLines);
 
 	vector<vector<string>> tokenizedInput = Assembler::GetTokenizedInputStrings(fileAsLines);

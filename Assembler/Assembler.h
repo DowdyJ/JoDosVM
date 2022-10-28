@@ -23,20 +23,14 @@ public:
 
 	static void RemoveCommentsFromLine(string& inputLine);
 
-	static void RemoveAllTextAfterAndIncludingENDMacro(vector<string>& linifiedFile);
+	static void HandleENDMacro(vector<string>& linifiedFile);
+	static void HandleORIGMacro(vector<string>& linifiedFile);
 
 	static void HandleFILLMacros(vector<vector<string>>& tokeninzedInput);
-	static void HandleORIGMacro(vector<string>& linifiedFile);
 	static void HandleSTRINGZMacros(vector<vector<string>>& tokeninzedInput);
-
 	static void HandleTRAPCodeMacroReplacement(vector<vector<string>>& tokeninzedInput);
-	//not implemented
-	static void RemoveExcessWhiteSpaceFromLine(string& inputLine);
-
-	void AddError(const string& errorMessage);
 
 	static void LogErrors(Logger& logger);
-
 	static bool AreErrors();
 
 private:
@@ -44,24 +38,23 @@ private:
 
 	static map<string, uint16_t> BuildLabelAddressMap(vector<vector<string>>& inputTokens, vector<string>& errors);
 	static void ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, vector<string>& errors);
-	//static map<string, uint16_t> labelIndexPairs;
 
-	static uint16_t ConvertStringIfNumber(const string& token);
 	static bool IsANumberString(const string& token);
 	static bool IsANumberLiteral(const string& token);
 	static bool IsADecimalNumber(const string& token);
     static bool IsAHexNumber(const string& token);
+
 	static uint16_t Get5BitImm5(const string& token);
-	//"pure" decimals are literal numbers e.g. 5, 7, 12. They are from converted labels. Other decimals are in assembly format e.g. #7, #8
 	static uint16_t Get9BitOffset(const string& token);
 	static uint16_t Get11BitOffset(const string& token);
 	static uint16_t Get6BitOffset(const string& token);
+
+	static uint16_t ConvertStringIfNumber(const string& token);
 	static uint16_t ConvertToDecimal(const string& token);
 	static uint16_t ConvertRegisterStringsTo3BitAddress(const string& registerName, vector<string>& errors);
 	static uint16_t ConvertFromHexToDec(const string& token);
 
 	static uint16_t HandleLITConversion(const vector<string>& instruction);
-	
 	static uint16_t HandleADDConversion(const vector<string>& instruction);
 	static uint16_t HandleANDConversion(const vector<string>& instruction);
 	static uint16_t HandleNOTConversion(const vector<string>& instruction);
