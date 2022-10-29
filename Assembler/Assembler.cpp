@@ -101,7 +101,7 @@ void Assembler::HandleORIGMacro(vector<string>& linifiedFile)
 
 void Assembler::HandleFILLMacros(vector<vector<string>>& tokeninzedInput) 
 {
-	// Expects input in the form .FILL x[0-9a-f]+
+	// Expects input in the form .FILL x[0-9a-f]+ or label
 
 	for (size_t i = 0; i < tokeninzedInput.size(); ++i)
 	{
@@ -118,22 +118,30 @@ void Assembler::HandleFILLMacros(vector<vector<string>>& tokeninzedInput)
 					return;
 				}
 
-				uint16_t valueAsInt = 0;
+				uint16_t valueAsInt;
+				bool isNumberArg = false;
 				string fillArgumentString = currentLine[j + 1];
 
 				if (IsANumberString(fillArgumentString))
 					valueAsInt = ConvertStringIfNumber(fillArgumentString);
 				else
-					_errors.push_back("Encountered unexpected token for FILL macro: " + fillArgumentString);
-				
+					isNumberArg = false;
+
 				if (j != 0)
 				{
 					string label = currentLine[0];
-					tokeninzedInput[i] = {label, "LIT", std::to_string(valueAsInt)};
+					if (!isNumberArg)
+						tokeninzedInput[i] = {label, "LIT", fillArgumentString};
+					else 
+						tokeninzedInput[i] = {label, "LIT", std::to_string(valueAsInt)};
 				} 
 				else
 				{
-					tokeninzedInput[i] = {"LIT", std::to_string(valueAsInt)};
+					if (!isNumberArg)
+						tokeninzedInput[i] = {"LIT", fillArgumentString};
+					else 
+						tokeninzedInput[i] = {"LIT", std::to_string(valueAsInt)};
+
 				}
 			}
 		}
@@ -709,7 +717,7 @@ uint16_t Assembler::HandleNOTConversion(const vector<string>& instruction)
 	if (instruction.size() < 3)
 		return 0;
 
-	uint16_t baseInstruction = 0b1001000001111111;
+	uint16_t baseInstruction = 0b1001000000111111;
 
 	uint16_t dr = ConvertRegisterStringsTo3BitAddress(instruction[1], _errors) << 9;
 	uint16_t sr = ConvertRegisterStringsTo3BitAddress(instruction[2], _errors) << 6;
@@ -744,11 +752,11 @@ uint16_t Assembler::HandleBRConversion(const vector<string>& instruction)
 		{
 			char letter = instruction[0][i];
 
-			if (letter == 'N')
+			if (letter == 'N' || letter == 'n')
 				flags |= 0x4;
-			if (letter == 'Z')
+			if (letter == 'Z' || letter == 'z')
 				flags |= 0x2;
-			if (letter == 'P')
+			if (letter == 'P' || letter == 'p')
 				flags |= 0x1;
 		}
 	}
