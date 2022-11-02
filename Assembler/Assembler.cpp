@@ -3,8 +3,6 @@
 
 
 vector<string> Assembler::_errors;
-//map<string, uint16_t> Assembler::labelIndexPairs;
-
 
 //Assumes all labels have been converted to 16 bit offsets in decimal form without pound sign
 vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inputTokens1)
@@ -66,7 +64,7 @@ void Assembler::ResolveAndReplaceLabels(vector<vector<string>>& inputTokens)
 {
 	vector<string> opCodesRequiringLabelChecks = 
 	{ "BR", "BRP", "BRN", "BRZ", "BRZP", "BRNP", "BRNZ", "BRNZP",
-	"JSR", "LD", "LDI", "LEA", "ST", "STI"};
+	"JSR", "LD", "LDI", "LEA", "ST", "STI", "LIT"};
 
 	map<string, uint16_t> labelIndexPairs = Assembler::BuildLabelAddressMap(inputTokens, Assembler::_errors);
 
@@ -253,8 +251,24 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 			if (opcode == opCodesToCheck[j])
 			{
 				string label;
+				if (opcode == "LIT")
+				{
+					label = Utilities::ToUpperCase(inputTokens[i][1]);
 
-				if (opcode[0] == 'B' || opcode[0] == 'J') //BR(nzp) and JSR
+					if (labelIndexPairs.find(label) != labelIndexPairs.end())
+					{
+						uint16_t labelLineNumber = 12288 + i + labelIndexPairs.at(label);
+						
+						inputTokens[i][1] = std::to_string(static_cast<int>(labelLineNumber) - static_cast<int>(i + 1)); //Add 1 to the line number because the offsets are relative to the INCREMENTED PC.
+					}
+					else 
+					{
+						if (!IsANumberString(label))
+							errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i) + ". Full line is as follows: " + Utilities::ConcatenateStrings(inputTokens[i]));
+					}
+				}
+
+				else if (opcode[0] == 'B' || opcode[0] == 'J') //BR(nzp) and JSR and LIT
 				{
 					label = Utilities::ToUpperCase(inputTokens[i][1]);
 
@@ -266,7 +280,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 					}
 					else 
 					{
-						if (label[0] != '#' && label[0] != 'x' && label[0] != 'X')
+						if (!IsANumberString(label))
 							errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i) + ". Full line is as follows: " + Utilities::ConcatenateStrings(inputTokens[i]));
 					}
 				}
@@ -282,7 +296,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 					}
 					else 
 					{
-						if (label[0] != '#' && label[0] != 'x' && label[0] != 'X')
+						if (!IsANumberString(label))
 							errors.push_back("Unregistered label: " + label + " used in line " + std::to_string(i));
 					}
 				}
@@ -653,7 +667,7 @@ uint16_t Assembler::HandleADDConversion(const vector<string>& instruction)
 	uint16_t sr2 = 0;
 	uint16_t imm5 = 0;
 
-	if (IsADecimalNumber(instruction[3]))
+	if (IsANumberString(instruction[3]))
 	{
 		mode = 0x20;
 		imm5 = Get5BitImm5(instruction[3]);

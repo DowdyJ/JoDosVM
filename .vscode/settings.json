@@ -55,5 +55,6 @@
         "regex": "cpp",
         "condition_variable": "cpp",
         "shared_mutex": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "Enabled"
 }

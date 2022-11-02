@@ -102,8 +102,8 @@ int main(int argc, char* argv[])
 		{
 			std::cout << "[" << lineIndex << "]" << Utilities::ConcatenateStrings(tokenizedInput[lineIndex], ' ');
 			try {
-				if (tokenizedInput[lineIndex][0] == "LIT")
-					if (int argAsInt = std::stoi(tokenizedInput[lineIndex][1]); argAsInt < 256)
+				if (tokenizedInput[lineIndex][0] == "LIT" && Assembler::IsANumberString(tokenizedInput[lineIndex][1]))
+					if (uint16_t argAsInt = Assembler::ConvertStringIfNumber(tokenizedInput[lineIndex][1]); argAsInt < 256)
 						std::cout << ' ' << static_cast<char>(argAsInt);
 			} 
 			catch (const std::invalid_argument& e)

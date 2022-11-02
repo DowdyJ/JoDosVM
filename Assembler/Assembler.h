@@ -32,6 +32,9 @@ public:
 
 	static void LogErrors(Logger& logger);
 	static bool AreErrors();
+	
+	static bool IsANumberString(const string& token);
+	static uint16_t ConvertStringIfNumber(const string& token);
 
 private:
 	static vector<string> _errors;
@@ -39,7 +42,6 @@ private:
 	static map<string, uint16_t> BuildLabelAddressMap(vector<vector<string>>& inputTokens, vector<string>& errors);
 	static void ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, vector<string>& errors);
 
-	static bool IsANumberString(const string& token);
 	static bool IsANumberLiteral(const string& token);
 	static bool IsADecimalNumber(const string& token);
     static bool IsAHexNumber(const string& token);
@@ -49,7 +51,6 @@ private:
 	static uint16_t Get11BitOffset(const string& token);
 	static uint16_t Get6BitOffset(const string& token);
 
-	static uint16_t ConvertStringIfNumber(const string& token);
 	static uint16_t ConvertToDecimal(const string& token);
 	static uint16_t ConvertRegisterStringsTo3BitAddress(const string& registerName, vector<string>& errors);
 	static uint16_t ConvertFromHexToDec(const string& token);
