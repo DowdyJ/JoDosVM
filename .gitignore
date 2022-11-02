@@ -11,6 +11,7 @@ a.out
 *.user
 *.userosscache
 *.sln.docstates
+*.gch
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
