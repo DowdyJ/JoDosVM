@@ -17,7 +17,7 @@ class Assembler
 public:
 	static vector<uint16_t> AssembleIntoBinary(const vector<vector<string>>& inputTokens);
 
-	static void ResolveAndReplaceLabels(vector<vector<string>>& inputTokens);
+	static void ResolveAndReplaceLabels(vector<vector<string>>& inputTokens, uint16_t pcStart);
 
 	static vector<vector<string>> GetTokenizedInputStrings(const vector<string>& inputString);
 
@@ -40,7 +40,7 @@ private:
 	static vector<string> _errors;
 
 	static map<string, uint16_t> BuildLabelAddressMap(vector<vector<string>>& inputTokens, vector<string>& errors);
-	static void ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, vector<string>& errors);
+	static void ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, uint16_t pcStart);
 
 	static bool IsANumberLiteral(const string& token);
 	static bool IsADecimalNumber(const string& token);

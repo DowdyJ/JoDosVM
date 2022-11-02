@@ -93,7 +93,8 @@ int main(int argc, char* argv[])
 	Assembler::HandleTRAPCodeMacroReplacement(tokenizedInput);
 	Assembler::HandleSTRINGZMacros(tokenizedInput);
 
-	Assembler::ResolveAndReplaceLabels(tokenizedInput);
+	uint16_t startLocation = Assembler::ConvertStringIfNumber(tokenizedInput[0][1]);
+	Assembler::ResolveAndReplaceLabels(tokenizedInput, startLocation);
 
 	std::cout << "\n------------------------------\nInterpreted the following parsed output: \n" << std::endl;
 

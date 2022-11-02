@@ -60,7 +60,7 @@ vector<uint16_t> Assembler::AssembleIntoBinary(const vector<vector<string>>& inp
 }
 
 
-void Assembler::ResolveAndReplaceLabels(vector<vector<string>>& inputTokens)
+void Assembler::ResolveAndReplaceLabels(vector<vector<string>>& inputTokens, uint16_t startLocation)
 {
 	vector<string> opCodesRequiringLabelChecks = 
 	{ "BR", "BRP", "BRN", "BRZ", "BRZP", "BRNP", "BRNZ", "BRNZP",
@@ -68,7 +68,7 @@ void Assembler::ResolveAndReplaceLabels(vector<vector<string>>& inputTokens)
 
 	map<string, uint16_t> labelIndexPairs = Assembler::BuildLabelAddressMap(inputTokens, Assembler::_errors);
 
-	Assembler::ReplaceLabelsWithOffsets(inputTokens, opCodesRequiringLabelChecks, labelIndexPairs, Assembler::_errors);
+	Assembler::ReplaceLabelsWithOffsets(inputTokens, opCodesRequiringLabelChecks, labelIndexPairs, startLocation);
 
 }
 
@@ -240,7 +240,7 @@ void Assembler::HandleSTRINGZMacros(vector<vector<string>>& tokeninzedInput)
 	return;
 }
 
-void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, vector<string>& errors) 
+void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, const vector<string>& opCodesToCheck, const map<string, uint16_t>& labelIndexPairs, uint16_t startByte) 
 {
 	for (size_t i = 0; i < inputTokens.size(); ++i)
 	{
@@ -257,14 +257,14 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 
 					if (labelIndexPairs.find(label) != labelIndexPairs.end())
 					{
-						uint16_t labelLineNumber = 12288 + i + labelIndexPairs.at(label);
+						uint16_t labelLineNumber = startByte + i + labelIndexPairs.at(label);
 						
 						inputTokens[i][1] = std::to_string(static_cast<int>(labelLineNumber) - static_cast<int>(i + 1)); //Add 1 to the line number because the offsets are relative to the INCREMENTED PC.
 					}
 					else 
 					{
 						if (!IsANumberString(label))
-							errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i) + ". Full line is as follows: " + Utilities::ConcatenateStrings(inputTokens[i]));
+							_errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i) + ". Full line is as follows: " + Utilities::ConcatenateStrings(inputTokens[i]));
 					}
 				}
 
@@ -281,7 +281,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 					else 
 					{
 						if (!IsANumberString(label))
-							errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i) + ". Full line is as follows: " + Utilities::ConcatenateStrings(inputTokens[i]));
+							_errors.push_back("Unregistered label: " + label  + " used in line " + std::to_string(i) + ". Full line is as follows: " + Utilities::ConcatenateStrings(inputTokens[i]));
 					}
 				}
 				else 
@@ -297,7 +297,7 @@ void Assembler::ReplaceLabelsWithOffsets(vector<vector<string>>& inputTokens, co
 					else 
 					{
 						if (!IsANumberString(label))
-							errors.push_back("Unregistered label: " + label + " used in line " + std::to_string(i));
+							_errors.push_back("Unregistered label: " + label + " used in line " + std::to_string(i));
 					}
 				}
 
