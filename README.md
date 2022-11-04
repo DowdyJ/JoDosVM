@@ -5,13 +5,13 @@ To build, run <code>make</code> in the base directory.
 <br>
 To run the VM, run <code>./lc3.pls [path] [swap_endianness]</code><br>
 <ul>
-<li><code>path</code>:             relative or abolute path to input binary code using forward slashes."</li>
+<li><code>path</code>:             relative or abolute path to input binary code using forward slashes.</li>
 <li><code>swap_endianness</code>:  whether to swap byte order during loading of binary image. Acceptable values are TRUE or FALSE. Should typically be TRUE.</li>
 </ul>
 <br>
 To run the Assembler, run <code>./assembler.pls [path] [swap_endianness]</code><br>
 <ul>
-<li><code>path</code>:             relative or abolute path to input LC3 assembly code file using forward slashes."</li>
+<li><code>path</code>:             relative or abolute path to input LC3 assembly code file using forward slashes.</li>
 <li><code>swap_endianness</code>:  whether to swap byte order during writing of binary image. Acceptable values are TRUE or FALSE. Should typically be TRUE.</li>
 </ul>
 
@@ -31,7 +31,7 @@ Labels may be placed on the same line as an instruction or alone on the line abo
 Labels are not case sensitive. LOOP is regarded as the same as Loop/lOOp/loop and so on.
 
 <h3>Assembler Macros</h3>
-The following macros are valid for use with the assembler:
+BLKW is not implemented. The following macros are valid for use with the assembler:
 
 <h4>.ORIG</h4>
 Requires an argument in hex format. (e.g. x3000)
