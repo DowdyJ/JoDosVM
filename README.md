@@ -1,6 +1,6 @@
 <h1>LC3 Virtual Machine and Assembler</h1>
 This is my implementation of a VM for the LC3. The VM will only run on Unix-like machines but the assembler should run on either.
-
+<br><br>
 To build, run <code>make</code> in the base directory.
 <br>
 To run the VM, run <code>./lc3.pls [path] [swap_endianness]</code><br>
@@ -20,7 +20,7 @@ The VM portion of the project could not have been made without the help of <a hr
 
 
 <h2>LC3 Assembler</h2>
-I made the assembler portion of this project by reading the project docs and reverse engineering pre-assembled binaries and comparing them to their assembly code. For the two projects I tested against it produces byte identical binary. 
+I made the assembler portion of this project by reading the project docs and reverse engineering pre-assembled binaries and comparing them to their assembly code. For the two projects I tested against, it produces byte identical binary. 
 
 As per the LC3 standard, SEMICOLON marks a comment. Comments can be on a line by themselves or after an instruction.
 
